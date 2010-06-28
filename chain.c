@@ -53,7 +53,7 @@ double contact_union(int n, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
     
     double r = 0;
@@ -101,7 +101,7 @@ static double union_funcg(int n, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
     
     double r = 0;
@@ -147,7 +147,7 @@ double contact_intersect(int n, int s, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
     
     double r = 0;
@@ -198,7 +198,7 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
     
     double r = 0;

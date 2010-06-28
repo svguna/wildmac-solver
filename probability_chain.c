@@ -38,7 +38,7 @@ double probability_ank_bn(int n, int k, int negate, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
 
     int i, offset;
@@ -145,7 +145,7 @@ double probability_bnk_bn(int n, int k, int negate, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
 
     int i, offset;
@@ -245,7 +245,7 @@ double probability_ank_an(int n, int k, int negate, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
 
     int i;
@@ -322,7 +322,7 @@ double probability_bnk_an(int n, int k, int negate, protocol_params_t *p)
 {
     static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
+    hashkey_t *hash_key;
     double *hash_res;
 
     int i;

@@ -5,7 +5,7 @@ SOURCES=$(shell ls *.c)
 OBJECTS=$(SOURCES:.c=.o)
 
 ifeq ($(UNAME), Linux)
-LDFLAGS = -lgsl -lgslcblas 
+LDFLAGS = -lgsl -lgslcblas -lpthread
 INCDIRS =
 endif
 

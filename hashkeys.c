@@ -24,9 +24,9 @@
 #include "wildmac.h"
 #include "hashkeys.h"
 
-key_t *create_key_protocol_nk(protocol_params_t *p, int n, int k, int negate)
+hashkey_t *create_key_protocol_nk(protocol_params_t *p, int n, int k, int negate)
 {
-    key_t *res = malloc(sizeof(key_t));
+    hashkey_t *res = malloc(sizeof(hashkey_t));
     switch (n - k) {
         case -1:
             n = k - 1;
@@ -52,7 +52,7 @@ key_t *create_key_protocol_nk(protocol_params_t *p, int n, int k, int negate)
 unsigned int key_hash(void *k)
 {
     unsigned int result = 0;
-    key_t *key = (key_t *) k;
+    hashkey_t *key = (hashkey_t *) k;
     result = ((unsigned int) (key->p.tau / M_PI * 100) << 24);
     result |= (key->p.samples << 16);
     result |= (key->n - key->k) << 8;
@@ -66,7 +66,7 @@ unsigned int key_hash(void *k)
 
 int key_equal(void *k1, void *k2)
 {
-    return memcmp(k1, k2, sizeof(key_t)) == 0;
+    return memcmp(k1, k2, sizeof(hashkey_t)) == 0;
 }
 
 
