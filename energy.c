@@ -252,6 +252,7 @@ double get_protocol_parameters(double latency, double probability,
     max_slots = latency / 2 / (2 * MINttx + trx);
 
 
+    printf("running on %d threads\n", thread_num);
     threads = malloc(thread_num * sizeof(pthread_t));
     for (i = 0; i < thread_num; i++)
         pthread_create(threads + i, NULL, worker_thread, &worker_data);
