@@ -6,6 +6,7 @@
 
 int main()
 {
-    printf("%f\n", probability_slotn());
+    printf("slot n: %f\n", probability_slotn());
+    printf("slot 0: %f\n", probability_slot0());
     return 0;
 }

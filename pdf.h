@@ -5,14 +5,15 @@
 
 #define EPSABS 0
 #define EPSREL 1e-3
-#define WSIZE 5000 
+#define WSIZE 1000 
 
 typedef double (* basic_function) (double x, void * params);
 
 enum {
-    SIMPLE,
+    INTERVAL,
     SUM,
-    DIFFERENCE
+    DIFFERENCE,
+    OFFSET
 };
 
 
@@ -33,11 +34,14 @@ struct func_params {
     union {
         struct domain domain;
         struct conv_params conv;
+        double offset;
     } data;
 };
 typedef struct func_params func_params_t;
 
 
+void fill_offset(func_params_t *params, double offset);
+void fill_interval(func_params_t *params, double begin, double end);
 void fill_domain_pdf_beacon(func_params_t *params, double beacon, double cca, 
         int cca_samples, int slot);
 void fill_domain_pdf_phase(func_params_t *params, int slot);
@@ -50,4 +54,6 @@ void fill_compose_difference(func_params_t *params, basic_function pdf1,
 double pdf_uniform(double x, void *p);
 double pdf_composed(double x, void *p);
 double pdf_slotn(double x, void *params);
+double pdf_after_contact(double x, void *p);
+
 #endif

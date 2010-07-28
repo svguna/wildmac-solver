@@ -12,21 +12,32 @@ struct conv_int_params {
 };
 
 
-void fill_domain_pdf_beacon(func_params_t *params, double beacon, double cca, 
-        int cca_samples, int slot)
+void fill_offset(func_params_t *params, double offset)
 {
-    params->type = SIMPLE;
-    params->data.domain.begin = 2 * M_PI * slot;
-    params->data.domain.end  = 2 * M_PI * (slot + 1) - 
-        beacon * (cca_samples + 1) - cca;
+    params->type = OFFSET;
+    params->data.offset = offset;
 }
 
 
-void fill_domain_pdf_phase(func_params_t *params, int slot)
+void fill_interval(func_params_t *params, double begin, double end)
 {
-    params->type = SIMPLE;
-    params->data.domain.begin = 2 * M_PI * slot;
-    params->data.domain.end = 2 * M_PI * (slot + 1);
+    params->type = INTERVAL;
+    params->data.domain.begin = begin;
+    params->data.domain.end = end;
+}
+
+
+void fill_domain_pdf_beacon(func_params_t *params, double beacon, double cca, 
+        int cca_samples, int slot)
+{
+    fill_interval(params, 2 * M_PI * slot, 2 * M_PI * (slot + 1) - beacon *
+            (cca_samples + 1) - cca);
+}
+
+
+void fill_domain_pdf_full(func_params_t *params, int slot)
+{
+    fill_interval(params, 2 * M_PI * slot, 2 * M_PI * (slot + 1));
 }
 
 
@@ -58,7 +69,7 @@ void fill_composed_difference(func_params_t *params, basic_function pdf1,
 double pdf_uniform(double x, void *p)
 {
     func_params_t *params = (func_params_t *) p;
-    assert(params->type == SIMPLE);
+    assert(params->type == INTERVAL);
     
     if (params->data.domain.begin <= x && x <= params->data.domain.end) 
         return 1. / (params->data.domain.end - params->data.domain.begin);
@@ -96,7 +107,7 @@ static void fill_domain(struct domain *domain, func_params_t *params)
 {
     struct domain d1, d2;
     switch (params->type) {
-        case SIMPLE:
+        case INTERVAL:
             domain->begin = params->data.domain.begin;
             domain->end= params->data.domain.end;
             return;
@@ -143,7 +154,6 @@ double pdf_composed(double x, void *p)
     else 
         F.function = &deconvolution_integrand;
     F.params = &int_params;
-
     
     gsl_integration_qags(&F, limits.begin, limits.end, EPSABS, EPSREL, WSIZE, w,
             &result, &error);
@@ -158,13 +168,28 @@ double pdf_slotn(double x, void *params)
     func_params_t sum_params, diff_params;
 
     fill_domain_pdf_beacon(&dom_beacon, .07 * M_PI, .01 * M_PI, 5, 0);
-    fill_domain_pdf_phase(&dom_phase, 0);
+    fill_domain_pdf_full(&dom_phase, 0);
 
     fill_composed_sum(&sum_params, pdf_uniform, &dom_phase, pdf_uniform,
             &dom_beacon);
     
     fill_composed_difference(&diff_params, pdf_composed, &sum_params, 
             pdf_uniform, &dom_beacon);
+    return pdf_composed(x, &diff_params);
+}
+
+
+double pdf_after_contact(double x, void *p)
+{
+    func_params_t dom_beacon, dom_contact;
+    func_params_t diff_params;
+
+    fill_domain_pdf_beacon(&dom_beacon, .07 * M_PI, .01 * M_PI, 5, 0);
+    fill_domain_pdf_full(&dom_contact, 0);
+    
+    fill_composed_difference(&diff_params, pdf_uniform, &dom_beacon, 
+            pdf_uniform, &dom_contact);
+
     return pdf_composed(x, &diff_params);
 }
 
