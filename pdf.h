@@ -11,8 +11,8 @@ typedef double (* basic_function) (double x, void * params);
 
 enum {
     SIMPLE,
-    CONVOLUTION,
-    DECONVOLUTION
+    SUM,
+    DIFFERENCE
 };
 
 
@@ -42,12 +42,12 @@ void fill_domain_pdf_beacon(func_params_t *params, double beacon, double cca,
         int cca_samples, int slot);
 void fill_domain_pdf_phase(func_params_t *params, int slot);
 
-void fill_convolution_params(func_params_t *params, basic_function pdf1,
+void fill_compose_add(func_params_t *params, basic_function pdf1,
         void *params1, basic_function pdf2, void *params2);
-void fill_deconvolution_params(func_params_t *params, basic_function pdf1,
+void fill_compose_difference(func_params_t *params, basic_function pdf1,
         void *params1, basic_function pdf2, void *params2);
 
 double pdf_uniform(double x, void *p);
-double convolution(double x, void *p);
+double pdf_composed(double x, void *p);
 double pdf_slotn(double x, void *params);
 #endif

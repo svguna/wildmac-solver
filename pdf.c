@@ -41,17 +41,17 @@ static void fill_composed_params(int type, func_params_t *params,
 }
 
 
-void fill_convolution_params(func_params_t *params, basic_function pdf1,
+void fill_composed_sum(func_params_t *params, basic_function pdf1,
         void *params1, basic_function pdf2, void *params2)
 {
-    fill_composed_params(CONVOLUTION, params, pdf1, params1, pdf2, params2);
+    fill_composed_params(SUM, params, pdf1, params1, pdf2, params2);
 }
 
 
-void fill_deconvolution_params(func_params_t *params, basic_function pdf1,
+void fill_composed_difference(func_params_t *params, basic_function pdf1,
         void *params1, basic_function pdf2, void *params2)
 {
-    fill_composed_params(DECONVOLUTION, params, pdf1, params1, pdf2, params2);
+    fill_composed_params(DIFFERENCE, params, pdf1, params1, pdf2, params2);
 }
 
 
@@ -101,14 +101,14 @@ static void fill_domain(struct domain *domain, func_params_t *params)
             domain->end= params->data.domain.end;
             return;
 
-        case CONVOLUTION:
+        case SUM:
             fill_domain(&d1, params->data.conv.pdf1.params);
             fill_domain(&d2, params->data.conv.pdf2.params);
             domain->begin = d1.begin + d2.begin;
             domain->end = d1.end + d2.end;
             return;
 
-        case DECONVOLUTION:
+        case DIFFERENCE:
             fill_domain(&d1, params->data.conv.pdf1.params);
             fill_domain(&d2, params->data.conv.pdf2.params);
             domain->begin = d1.begin - d2.end;
@@ -119,10 +119,10 @@ static void fill_domain(struct domain *domain, func_params_t *params)
 }
 
 
-double convolution(double x, void *p)
+double pdf_composed(double x, void *p)
 {
     func_params_t *params = (func_params_t *) p;
-    assert(params->type == CONVOLUTION || params->type == DECONVOLUTION);
+    assert(params->type == SUM || params->type == DIFFERENCE);
     
     gsl_integration_workspace *w = gsl_integration_workspace_alloc(WSIZE);
     struct domain limits;
@@ -138,7 +138,7 @@ double convolution(double x, void *p)
     int_params.x = x;
     int_params.params = &params->data.conv;
 
-    if (params->type == CONVOLUTION) 
+    if (params->type == SUM) 
         F.function = &convolution_integrand;
     else 
         F.function = &deconvolution_integrand;
@@ -155,16 +155,16 @@ double convolution(double x, void *p)
 double pdf_slotn(double x, void *params)
 {
     func_params_t dom_beacon, dom_phase;
-    func_params_t conv_params, deconv_params;
+    func_params_t sum_params, diff_params;
 
     fill_domain_pdf_beacon(&dom_beacon, .07 * M_PI, .01 * M_PI, 5, 0);
     fill_domain_pdf_phase(&dom_phase, 0);
 
-    fill_convolution_params(&conv_params, pdf_uniform, &dom_phase, pdf_uniform,
+    fill_composed_sum(&sum_params, pdf_uniform, &dom_phase, pdf_uniform,
             &dom_beacon);
     
-    fill_deconvolution_params(&deconv_params, convolution, &conv_params, 
+    fill_composed_difference(&diff_params, pdf_composed, &sum_params, 
             pdf_uniform, &dom_beacon);
-    return convolution(x, &deconv_params);
+    return pdf_composed(x, &diff_params);
 }
 
