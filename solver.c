@@ -49,5 +49,9 @@ int main()
     printf("union_f(1): %f\n", union_funcf(1, &params));
     printf("union_f(2): %f\n", union_funcf(2, &params));
     printf("union_f(3): %f\n", union_funcf(3, &params));
+    printf("union_f(4): %f\n", union_funcf(4, &params));
+    printf("union_f(5): %f\n", union_funcf(5, &params));
+    printf("union_f(6): %f\n", union_funcf(6, &params));
+    printf("union_f(7): %f\n", union_funcf(7, &params));
     return 0;
 }

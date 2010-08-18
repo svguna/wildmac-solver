@@ -8,12 +8,18 @@
 #include "wildmac.h"
 #include "probability.h"
 #include "pdf_chain.h"
+#include "hashtable.h"
+#include "hashkeys.h"
 
 #define CALLS 500000
 
 
 double probability_ank_bn(int n, int k, protocol_params_t *p)
 {
+    static struct hashtable *hash_table = NULL;
+    key_t *hash_key;
+    double *hash_res;
+
     int i;
     double xl[7], xu[7];
     double res, err;
@@ -38,7 +44,17 @@ double probability_ank_bn(int n, int k, protocol_params_t *p)
         return 0;
     
     if (k == 0) 
-        return  probability_an_bn(p);
+        return probability_an_bn(p);
+
+    if (hash_table == NULL)
+        hash_table = create_hashtable(16, key_hash, key_equal);
+    
+    hash_key = create_key_protocol_nk(p, n, k); 
+    hash_res = hashtable_search(hash_table, hash_key);
+    if (hash_res != NULL) {
+        free(hash_key);
+        return *hash_res;
+    }
 
     for (i = 0; i < k; i++) {
         xl[2 * i] = p->tau;
@@ -59,12 +75,20 @@ double probability_ank_bn(int n, int k, protocol_params_t *p)
     if (n - k == 0)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
 
+    hash_res = malloc(sizeof(double));
+    *hash_res = res;
+    hashtable_insert(hash_table, hash_key, hash_res);
+
     return res;
 }
 
 
 double probability_bnk_bn(int n, int k, protocol_params_t *p)
 {
+    static struct hashtable *hash_table = NULL;
+    key_t *hash_key;
+    double *hash_res;
+
     int i;
     double xl[6], xu[6];
     double res, err;
@@ -87,6 +111,16 @@ double probability_bnk_bn(int n, int k, protocol_params_t *p)
 
     if (n - k < 0)
         return 0;
+
+    if (hash_table == NULL)
+        hash_table = create_hashtable(16, key_hash, key_equal);
+    
+    hash_key = create_key_protocol_nk(p, n, k); 
+    hash_res = hashtable_search(hash_table, hash_key);
+    if (hash_res != NULL) {
+        free(hash_key);
+        return *hash_res;
+    }
     
     for (i = 0; i < k; i++) {
         xl[2 * i] = p->tau;
@@ -101,12 +135,21 @@ double probability_bnk_bn(int n, int k, protocol_params_t *p)
     gsl_monte_plain_integrate(&F, xl, xu, F.dim, CALLS, r, s, &res, &err);
     gsl_monte_plain_free(s);
     gsl_rng_free(r);
+    
+    hash_res = malloc(sizeof(double));
+    *hash_res = res;
+    hashtable_insert(hash_table, hash_key, hash_res);
+
     return res;
 }
 
 
 double probability_ank_an(int n, int k, protocol_params_t *p)
 {
+    static struct hashtable *hash_table = NULL;
+    key_t *hash_key;
+    double *hash_res;
+
     int i;
     double xl[6], xu[6];
     double res, err;
@@ -130,6 +173,16 @@ double probability_ank_an(int n, int k, protocol_params_t *p)
     if (n - k < 0)
         return 0;
 
+    if (hash_table == NULL)
+        hash_table = create_hashtable(16, key_hash, key_equal);
+    
+    hash_key = create_key_protocol_nk(p, n, k); 
+    hash_res = hashtable_search(hash_table, hash_key);
+    if (hash_res != NULL) {
+        free(hash_key);
+        return *hash_res;
+    }
+
     for (i = 0; i < k; i++) {
         xl[2 * i] = p->lambda - p->on;
         xu[2 * i] = -p->tau;
@@ -147,12 +200,20 @@ double probability_ank_an(int n, int k, protocol_params_t *p)
     if (n - k == 0)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
 
+    hash_res = malloc(sizeof(double));
+    *hash_res = res;
+    hashtable_insert(hash_table, hash_key, hash_res);
+
     return res;
 }
 
 
 double probability_bnk_an(int n, int k, protocol_params_t *p)
 {
+    static struct hashtable *hash_table = NULL;
+    key_t *hash_key;
+    double *hash_res;
+
     int i;
     double xl[7], xu[7];
     double res, err;
@@ -176,6 +237,16 @@ double probability_bnk_an(int n, int k, protocol_params_t *p)
     if (n - k < 0) 
         return 0;
 
+    if (hash_table == NULL)
+        hash_table = create_hashtable(16, key_hash, key_equal);
+    
+    hash_key = create_key_protocol_nk(p, n, k); 
+    hash_res = hashtable_search(hash_table, hash_key);
+    if (hash_res != NULL) {
+        free(hash_key);
+        return *hash_res;
+    }
+
     for (i = 0; i < k - 1; i++) {
         xl[2 * i] = p->lambda - p->on;
         xu[2 * i] = -p->tau;
@@ -191,6 +262,11 @@ double probability_bnk_an(int n, int k, protocol_params_t *p)
     gsl_monte_plain_integrate(&F, xl, xu, F.dim, CALLS, r, s, &res, &err);
     gsl_monte_plain_free(s);
     gsl_rng_free(r);
+    
+    hash_res = malloc(sizeof(double));
+    *hash_res = res;
+    hashtable_insert(hash_table, hash_key, hash_res);
+
     return res;
 }
 
