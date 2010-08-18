@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #include "probability.h"
+#include "probability_chain.h"
+#include "chain.h"
 
 int main()
 {
@@ -20,5 +22,32 @@ int main()
     printf("slot 0: %f\n", probability_slot0(&params));
     printf("A0 <- B0: %f\n", probability_a0_b0(&params));
     printf("B0 <- A0: %f\n", probability_b0_a0(&params));
+
+    int n = 1;
+    printf("\n");
+    printf("An-0 <- Bn: %f\n", probability_ank_bn(n, 0, &params));
+    printf("An-1 <- Bn: %f\n", probability_ank_bn(n, 1, &params));
+    printf("An-2 <- Bn: %f\n", probability_ank_bn(n, 2, &params));
+    
+    printf("\n");
+    printf("Bn-1 <- Bn: %f\n", probability_bnk_bn(n, 1, &params));
+    printf("Bn-2 <- Bn: %f\n", probability_bnk_bn(n, 2, &params));
+    
+    printf("\n");
+    printf("An-1 <- An: %f\n", probability_ank_an(n, 1, &params));
+    printf("An-2 <- An: %f\n", probability_ank_an(n, 2, &params));
+
+    
+    printf("\n");
+    printf("Bn-1 <- An: %f\n", probability_bnk_an(n, 1, &params));
+    printf("Bn-2 <- An: %f\n", probability_bnk_an(n, 2, &params));
+    printf("Bn-3 <- An: %f\n", probability_bnk_an(n, 3, &params));
+
+    printf("\n");
+    
+    printf("union_f(0): %f\n", union_funcf(0, &params));
+    printf("union_f(1): %f\n", union_funcf(1, &params));
+    printf("union_f(2): %f\n", union_funcf(2, &params));
+    printf("union_f(3): %f\n", union_funcf(3, &params));
     return 0;
 }

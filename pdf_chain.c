@@ -8,7 +8,7 @@
 #define CONSEC5(p) (3 * p->tau * (p->samples + 1) - p->lambda)
 
 
-double pdf_an_bn1(double x, void *params)
+static double pdf_an_bn1(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
     double tmp = ACTIVE(p->protocol);
@@ -25,7 +25,7 @@ double pdf_an_bn1(double x, void *params)
 }
 
 
-double pdf_an_bn(double x, void *params)
+static double pdf_an_bn(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
     double tmp = ACTIVE(p->protocol);
