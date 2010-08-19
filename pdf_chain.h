@@ -8,6 +8,7 @@
 struct chain_params {
     int n;
     int k;
+    int negate;
     protocol_params_t *protocol;
 };
 typedef struct chain_params chain_params_t;

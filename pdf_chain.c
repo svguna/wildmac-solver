@@ -210,8 +210,8 @@ double pdf_chain_bnk_bn(double *x, size_t dim, void *params)
     assert(dim == p->k * 2);
     assert(p->k > 0);
 
-    assert(p->k < 3); // for k > 2 pdf is 0, but we don't use it
-    if (p->k == 2 && CONSEC5(p->protocol) < 2 * M_PI)
+    if (((p->negate && p->k == 3) || (!p->negate == 0 && p->k == 2))
+            && CONSEC5(p->protocol) < 2 * M_PI)
         return 0;
 
     for (i = p->k; i > 0; i--) {
@@ -244,11 +244,9 @@ double pdf_chain_ank_bn(double *x, size_t dim, void *params)
     int i, j;
     double result = 1;
     assert(dim == p->k * 2 + 1);
-    assert(p->k >= 0);
 
-    assert(p->k < 3); // for k > 2 pdf is 0, but we don't use it
-    
-    if (p->k == 2 && CONSEC5(p->protocol) < 2 * M_PI)
+    if (((p->negate && p->k == 3) || (!p->negate == 0 && p->k == 2))
+            && CONSEC5(p->protocol) < 2 * M_PI)
         return 0;
 
     for (i = p->k; i >= 0; i--) {
@@ -272,6 +270,4 @@ double pdf_chain_ank_bn(double *x, size_t dim, void *params)
     }
     return result;
 }
-
-
 

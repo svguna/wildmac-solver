@@ -6,12 +6,13 @@
 struct key {
     int n;
     int k;
+    int negate;
     protocol_params_t p;
 };
 typedef struct key key_t;
 
 
-key_t *create_key_protocol_nk(protocol_params_t *p, int n, int k);
+key_t *create_key_protocol_nk(protocol_params_t *p, int n, int k, int negate);
 unsigned int key_hash(void *k);
 int key_equal(void *k1, void *k2);
 

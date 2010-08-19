@@ -33,29 +33,47 @@ int main()
     printf("A0 <- B-1: %f\n", probability_a0_bm1(&params));
     printf("B-1 <- A0: %f\n", probability_bm1_a0(&params));
 
-    int n = 2;
+    int n = 5;
     printf("\n");
-    printf("An-0 <- Bn: %f\n", probability_ank_bn(n, 0, &params));
-    printf("An-1 <- Bn: %f\n", probability_ank_bn(n, 1, &params));
-    printf("An-2 <- Bn: %f\n", probability_ank_bn(n, 2, &params));
+    printf("An-0 <- Bn: %f\n", probability_ank_bn(n, 0, 0, &params));
+    printf("An-1 <- Bn: %f\n", probability_ank_bn(n, 1, 0, &params));
+    printf("An-2 <- Bn: %f\n", probability_ank_bn(n, 2, 0, &params));
     
     printf("\n");
-    printf("Bn-1 <- Bn: %f\n", probability_bnk_bn(n, 1, &params));
-    printf("Bn-2 <- Bn: %f\n", probability_bnk_bn(n, 2, &params));
+    printf("An-1 <- !Bn: %f\n", probability_ank_bn(n, 1, 1, &params));
+    printf("An-2 <- !Bn: %f\n", probability_ank_bn(n, 2, 1, &params));
+    printf("An-3 <- !Bn: %f\n", probability_ank_bn(n, 3, 1, &params));
     
     printf("\n");
-    printf("An-1 <- An: %f\n", probability_ank_an(n, 1, &params));
-    printf("An-2 <- An: %f\n", probability_ank_an(n, 2, &params));
-
+    printf("Bn-2 <- !Bn: %f\n", probability_bnk_bn(n, 2, 1, &params));
+    printf("Bn-3 <- !Bn: %f\n", probability_bnk_bn(n, 3, 1, &params));
+    printf("Bn-4 <- !Bn: %f\n", probability_bnk_bn(n, 3, 1, &params));
     
     printf("\n");
-    printf("Bn-1 <- An: %f\n", probability_bnk_an(n, 1, &params));
-    printf("Bn-2 <- An: %f\n", probability_bnk_an(n, 2, &params));
-    printf("Bn-3 <- An: %f\n", probability_bnk_an(n, 3, &params));
+    printf("Bn-1 <- Bn: %f\n", probability_bnk_bn(n, 1, 0, &params));
+    printf("Bn-2 <- Bn: %f\n", probability_bnk_bn(n, 2, 0, &params));
+    
+    printf("\n");
+    printf("An-1 <- An: %f\n", probability_ank_an(n, 1, 0, &params));
+    printf("An-2 <- An: %f\n", probability_ank_an(n, 2, 0, &params));
+    
+    printf("\n");
+    printf("An-2 <- !An: %f\n", probability_ank_an(n, 2, 1, &params));
+    printf("An-3 <- !An: %f\n", probability_ank_an(n, 3, 1, &params));
+
+    printf("\n");
+    printf("Bn-1 <- An: %f\n", probability_bnk_an(n, 1, 0, &params));
+    printf("Bn-2 <- An: %f\n", probability_bnk_an(n, 2, 0, &params));
+    printf("Bn-3 <- An: %f\n", probability_bnk_an(n, 3, 0, &params));
+
+    printf("\n");
+    printf("Bn-2 <- !An: %f\n", probability_bnk_an(n, 2, 1, &params));
+    printf("Bn-3 <- !An: %f\n", probability_bnk_an(n, 3, 1, &params));
+    printf("Bn-4 <- !An: %f\n", probability_bnk_an(n, 4, 1, &params));
 
     printf("\n");
 
-    printf("B-1 <- B0: %f\n", probability_bnk_bn(0, 1, &params));
+    printf("B-1 <- B0: %f\n", probability_bnk_bn(0, 1, 0, &params));
     
     for (n = 0; n < 7; n++) {
         printf("    union_f(%d): %f\n", n, union_funcf(n, &params));
