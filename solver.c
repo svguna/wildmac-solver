@@ -23,7 +23,17 @@ int main()
     printf("A0 <- B0: %f\n", probability_a0_b0(&params));
     printf("B0 <- A0: %f\n", probability_b0_a0(&params));
 
-    int n = 1;
+    printf("\n");
+    printf("slot n n1: %f\n", probability_slotn1(&params));
+    printf("An <- Bn1: %f\n", probability_an_bn1(&params));
+    printf("Bn1 <- An: %f\n", probability_bn1_an(&params));
+
+    printf("\n");
+    printf("slot 0 -1: %f\n", probability_slotm1(&params));
+    printf("A0 <- B-1: %f\n", probability_a0_bm1(&params));
+    printf("B-1 <- A0: %f\n", probability_bm1_a0(&params));
+
+    int n = 2;
     printf("\n");
     printf("An-0 <- Bn: %f\n", probability_ank_bn(n, 0, &params));
     printf("An-1 <- Bn: %f\n", probability_ank_bn(n, 1, &params));
@@ -44,14 +54,12 @@ int main()
     printf("Bn-3 <- An: %f\n", probability_bnk_an(n, 3, &params));
 
     printf("\n");
+
+    printf("B-1 <- B0: %f\n", probability_bnk_bn(0, 1, &params));
     
-    printf("union_f(0): %f\n", union_funcf(0, &params));
-    printf("union_f(1): %f\n", union_funcf(1, &params));
-    printf("union_f(2): %f\n", union_funcf(2, &params));
-    printf("union_f(3): %f\n", union_funcf(3, &params));
-    printf("union_f(4): %f\n", union_funcf(4, &params));
-    printf("union_f(5): %f\n", union_funcf(5, &params));
-    printf("union_f(6): %f\n", union_funcf(6, &params));
-    printf("union_f(7): %f\n", union_funcf(7, &params));
+    for (n = 0; n < 7; n++) {
+        printf("    union_f(%d): %f\n", n, union_funcf(n, &params));
+        printf("intersect_f(%d): %f\n", n, intersect_funcf(n, 0, &params));
+    }
     return 0;
 }

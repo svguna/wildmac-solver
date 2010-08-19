@@ -43,8 +43,11 @@ double probability_ank_bn(int n, int k, protocol_params_t *p)
     if (n - k < 0)
         return 0;
     
-    if (k == 0) 
+    if (k == 0) {
+        if (n == 0)
+            return probability_a0_b0(p);
         return probability_an_bn(p);
+    }
 
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
@@ -71,7 +74,7 @@ double probability_ank_bn(int n, int k, protocol_params_t *p)
     gsl_monte_plain_integrate(&F, xl, xu, F.dim, CALLS, r, s, &res, &err);
     gsl_monte_plain_free(s);
     gsl_rng_free(r);
-
+    
     if (n - k == 0)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
 
@@ -109,7 +112,7 @@ double probability_bnk_bn(int n, int k, protocol_params_t *p)
     assert(k > 0);
     assert(k < 3);
 
-    if (n - k < 0)
+    if (n - k < -1) 
         return 0;
 
     if (hash_table == NULL)
@@ -135,7 +138,11 @@ double probability_bnk_bn(int n, int k, protocol_params_t *p)
     gsl_monte_plain_integrate(&F, xl, xu, F.dim, CALLS, r, s, &res, &err);
     gsl_monte_plain_free(s);
     gsl_rng_free(r);
-    
+  
+    if (n - k == -1) 
+        res *= (2 * M_PI + p->on - 2 * p->lambda -
+                (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
+
     hash_res = malloc(sizeof(double));
     *hash_res = res;
     hashtable_insert(hash_table, hash_key, hash_res);
@@ -170,7 +177,7 @@ double probability_ank_an(int n, int k, protocol_params_t *p)
     assert(k > 0);
     assert(k < 3);
 
-    if (n - k < 0)
+    if (n - k < 0) 
         return 0;
 
     if (hash_table == NULL)
@@ -234,8 +241,14 @@ double probability_bnk_an(int n, int k, protocol_params_t *p)
     assert(k > 0);
     assert(k < 4);
 
-    if (n - k < 0) 
-        return 0;
+    if (n - k < -1) 
+        return 0; 
+
+    if (k == 1) {
+        if (n == 0)
+            return probability_bm1_a0(p);
+        return probability_bn1_an(p);
+    }
 
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
@@ -262,6 +275,10 @@ double probability_bnk_an(int n, int k, protocol_params_t *p)
     gsl_monte_plain_integrate(&F, xl, xu, F.dim, CALLS, r, s, &res, &err);
     gsl_monte_plain_free(s);
     gsl_rng_free(r);
+    
+    if (n - k == -1) 
+        res *= (2 * M_PI + p->on - 2 * p->lambda -
+                (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
     
     hash_res = malloc(sizeof(double));
     *hash_res = res;

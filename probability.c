@@ -22,6 +22,19 @@ double probability_a0_b0(protocol_params_t *p)
 }
 
 
+double probability_an_bn1(protocol_params_t *p)
+{
+    return probability_bn_an(p);
+}
+
+
+double probability_a0_bm1(protocol_params_t *p)
+{
+    double result = (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
+    return result * probability_bn_an(p);
+}
+
+
 double probability_bn_an(protocol_params_t *p)
 {
     double active = ACTIVE(p);
@@ -38,6 +51,20 @@ double probability_b0_a0(protocol_params_t *p)
 }
 
 
+double probability_bn1_an(protocol_params_t *p)
+{
+    return probability_an_bn(p);
+}
+
+
+double probability_bm1_a0(protocol_params_t *p)
+{
+    double result = (2 * M_PI + p->on - 2 * p->lambda - 
+            (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
+    return result * probability_an_bn(p);
+}
+
+
 double probability_slotn(protocol_params_t *p)
 {
     return (p->samples * p->tau) / M_PI;
@@ -47,5 +74,17 @@ double probability_slotn(protocol_params_t *p)
 double probability_slot0(protocol_params_t *p)
 {
     return probability_b0_a0(p) + probability_a0_b0(p);
+}
+
+
+double probability_slotn1(protocol_params_t *p)
+{
+    return probability_slotn(p);
+}
+
+
+double probability_slotm1(protocol_params_t *p)
+{
+    return probability_bm1_a0(p) + probability_a0_bm1(p);
 }
 

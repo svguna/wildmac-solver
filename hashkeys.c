@@ -8,13 +8,20 @@
 key_t *create_key_protocol_nk(protocol_params_t *p, int n, int k)
 {
     key_t *res = malloc(sizeof(key_t));
-    if (n - k == 0) {
-        n = k;
-        k = 0;
-    } else {
-        n = 1 + k;
-        k = 1;
+    switch (n - k) {
+        case -1:
+            n = k - 1;
+            k = -1;
+            break;
+        case 0:
+            n = k;
+            k = 0;
+            break;
+        default:
+            n = 1 + k;
+            k = 1;
     }
+
     res->n = n;
     res->k = k;
     memcpy(&res->p, p, sizeof(protocol_params_t));
