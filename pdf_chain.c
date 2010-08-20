@@ -100,7 +100,7 @@ static double pdf_bnk_bn(double x, void *params)
     if (-2 * p->k * M_PI < x && x < 2 * (1 - p->k) * M_PI - p->protocol->on)
         return (2 * (1 - p->k) * M_PI - x - p->protocol->on) / tmp / tmp;
 
-    if (x == 2 * p->k * M_PI)
+    if (x == -2 * p->k * M_PI)
         return 1 / tmp;
     
     return 0;
@@ -116,11 +116,10 @@ static double pdf_ank_bn(double x, void *params)
         return pdf_an_bn(x, params);
 
     if (p->protocol->on - 2 * (2 + p->k) * M_PI < x && 
-            x < -2 * (1 + p->k) - p->protocol->on)
+            x < -2 * (1 + p->k) * M_PI)
         return (x + 4 * M_PI - p->protocol->on) / 2 / M_PI / tmp;
 
-    if (-2 * (1 + p->k) - p->protocol->on < x &&
-            x < -2 * p->k * M_PI)
+    if (-2 * (1 + p->k) * M_PI < x && x < -2 * p->k * M_PI)
         return 1 / 2 / M_PI;
 
     if (-2 * p->k * M_PI < x && 2 * (1 - p->k) * M_PI - p->protocol->on)
@@ -158,7 +157,10 @@ double pdf_chain_ank_an(double *x, size_t dim, void *params)
         y = 0;
         for (j = 0; j < i - 1; j++)
             y += x[2 * j + 1] - x[2 * j];
-        y -= x[2 * i - 2];
+        if (i == 1)
+            y = x[0];
+        else
+            y -= x[2 * i - 2];
         result *= pdf_an_bnk(y, &p2);
     }
     return result;
@@ -188,7 +190,10 @@ double pdf_chain_bnk_an(double *x, size_t dim, void *params)
         y = 0;
         for (j = 0; j < i - 1; j++)
             y += x[2 * j + 1] - x[2 * j];
-        y -= x[2 * i - 2];
+        if (i == 1)
+            y = x[0];
+        else
+            y -= x[2 * i - 2];
         result *= pdf_an_bnk(y, &p2);
     
         p2.k = i - 1;
@@ -231,7 +236,10 @@ double pdf_chain_bnk_bn(double *x, size_t dim, void *params)
         y = 0;
         for (j = 0; j < i - 1; j++)
             y += x[2 * j + 1] - x[2 * j];
-        y -= x[2 * i - 2];
+        if (i == 1)
+            y = x[0];
+        else
+            y -= x[2 * i - 2];
         result *= pdf_ank_bn(y, &p2);
     }
     return result;
@@ -260,7 +268,10 @@ double pdf_chain_ank_bn(double *x, size_t dim, void *params)
         y = 0;
         for (j = 0; j < i; j++)
             y += x[2 * j + 1] - x[2 * j];
-        y -= x[2 * i];
+        if (i == 0)
+            y = x[0];
+        else
+            y -= x[2 * i];
         result *= pdf_ank_bn(y, &p2);
     
         y = 0;
