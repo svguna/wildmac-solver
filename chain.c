@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <gsl/gsl_math.h>
+#include <assert.h>
 
 #include "wildmac.h"
 #include "probability.h"
@@ -10,6 +11,23 @@
 
 static double union_funcg(int n, protocol_params_t *p);
 static double intersect_funcg(int n, int s, protocol_params_t *p);
+
+
+double probability_contact(int n, protocol_params_t *p)
+{
+    double res = 0;
+    if (n == 0) {
+        res += probability_slot0(p);
+        res += probability_slotm1(p);
+        res -= probability_bnk_bn(0, 1, 0, p);
+        return res;
+    }
+    res += probability_slotn(p);
+    res += probability_slotn1(p);
+    res -= probability_bnk_bn(n, 1, 0, p);
+    return res;
+}
+
 
 double union_funcf(int n, protocol_params_t *p)
 {
@@ -186,4 +204,53 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
 
     return r;
 }
+
+
+double funch(int n, int s, protocol_params_t *p)
+{
+    static struct hashtable *hash_table = NULL;
+    key_t *hash_key;
+    double *hash_res;
+    
+    double r = 0;
+    int i, sign;
+
+    assert(n > 0);
+
+    if (n < s) 
+        return 0;
+
+    if (hash_table == NULL)
+        hash_table = create_hashtable(16, key_hash, key_equal);
+    
+    hash_key = create_key_protocol_nk(p, n, n, 0); 
+    hash_res = hashtable_search(hash_table, hash_key);
+    if (hash_res != NULL) {
+        free(hash_key);
+        return *hash_res;
+    }
+
+    r += intersect_funcf(n - 2, s, p) * 
+        (probability_ank_bn(n, 1, 1, p) + probability_bnk_an(n, 1, 1, p));
+
+    r += intersect_funcg(n - 1, s, p) *
+        (1 - probability_slotn(p) - probability_slotn1(p) +
+         probability_bnk_bn(n, 1, 0, p));
+
+    for (i = 2, sign = -1; n - i >= s && i <= 3; i++, sign *= -1) 
+        r += sign * probability_ank_bn(n, i, 1, p) * 
+            intersect_funcf(n - i - 1, s, p);
+    
+    for (i = 2, sign = -1; n - i >= s - 1 && i <= 3; i++, sign *= -1) 
+        r += sign * probability_bnk_bn(n, i, 1, p) * 
+            intersect_funcg(n - i, s, p);
+    
+    hash_res = malloc(sizeof(double));
+    *hash_res = r;
+    hashtable_insert(hash_table, hash_key, hash_res);
+
+    return r;
+}
+
+
 

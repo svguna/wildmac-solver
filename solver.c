@@ -73,9 +73,13 @@ int main()
 
     printf("\n");
 
-    printf("B-1 <- B0: %f\n", probability_bnk_bn(0, 1, 0, &params));
+    printf("contact(0): %f\n", probability_contact(0, &params));
+    printf("contact(1): %f\n", probability_contact(1, &params));
+    printf("contact(2): %f\n", probability_contact(2, &params));
     
-    for (n = 0; n < 7; n++) {
+    printf("\n");
+    
+    for (n = 0; n < 0; n++) {
         printf("    union_f(%d): %f\n", n, union_funcf(n, &params));
         printf("intersect_f(%d): %f\n", n, intersect_funcf(n, 0, &params));
     }
