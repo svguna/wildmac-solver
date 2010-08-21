@@ -29,7 +29,7 @@ double probability_contact(int n, protocol_params_t *p)
 }
 
 
-double union_funcf(int n, protocol_params_t *p)
+double contact_union(int n, protocol_params_t *p)
 {
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
@@ -56,10 +56,10 @@ double union_funcf(int n, protocol_params_t *p)
     if (n == 0)
         r += probability_b0_a0(p);
     else
-        r += probability_bn_an(p) * (1 - union_funcf(n - 1, p)); 
+        r += probability_bn_an(p) * (1 - contact_union(n - 1, p)); 
     
     for (i = 0; i <= 2; i++) 
-        r += (1 - union_funcf(n - i - 1, p)) * probability_ank_bn(n, i, 0, p);
+        r += (1 - contact_union(n - i - 1, p)) * probability_ank_bn(n, i, 0, p);
     
     for (i = 1; i <= 2; i++) 
         r += (union_funcg(n - i, p) - 1) * probability_bnk_bn(n, i, 0, p);
@@ -94,7 +94,7 @@ static double union_funcg(int n, protocol_params_t *p)
         return *hash_res;
     }
 
-    r += union_funcf(n - 1, p);
+    r += contact_union(n - 1, p);
 
     if (n == 0)
         r += probability_a0_bm1(p);
@@ -102,7 +102,7 @@ static double union_funcg(int n, protocol_params_t *p)
         r += probability_an_bn1(p) * (1 - union_funcg(n - 1, p));
 
     for (i = 1; i <= 2; i++)
-        r += probability_ank_an(n, i, 0, p)  * (union_funcf(n - i - 1, p) - 1);
+        r += probability_ank_an(n, i, 0, p) * (contact_union(n - i - 1, p) - 1);
     
     for (i = 1; i <= 3; i++) 
         r += probability_bnk_an(n, i, 0, p) * (1 - union_funcg(n - i, p));
@@ -115,7 +115,7 @@ static double union_funcg(int n, protocol_params_t *p)
 }
 
 
-double intersect_funcf(int n, int s, protocol_params_t *p)
+double contact_intersect(int n, int s, protocol_params_t *p)
 {
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
@@ -143,13 +143,13 @@ double intersect_funcf(int n, int s, protocol_params_t *p)
         if (n == s)
             r += probability_slotn(p);
         else
-            r += intersect_funcf(n - 1, s, p) * probability_slotn(p);
+            r += contact_intersect(n - 1, s, p) * probability_slotn(p);
   
     r += intersect_funcg(n, s, p);
     
     for (i = 1, sign = -1; n - i >= s && i <= 2; i++, sign *= -1) 
         r += sign * probability_ank_bn(n, i, 0, p) * 
-            intersect_funcf(n - i - 1, s, p);
+            contact_intersect(n - i - 1, s, p);
     
     for (i = 1, sign = -1; n - i >= s - 1 && i <= 2; i++, sign *= -1) 
         r += sign * probability_bnk_bn(n, i, 0, p) * 
@@ -193,7 +193,8 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
         r += intersect_funcg(n - 1, s, p) * probability_slotn1(p);
 
     for (i = 1, sign = 1; n - i >= s && i <= 2; i++, sign *= -1)
-        r += probability_ank_an(n, i, 0, p) * intersect_funcf(n - i - 1, s, p);
+        r += probability_ank_an(n, i, 0, p) * 
+            contact_intersect(n - i - 1, s, p);
 
     for (i = 2, sign = -1; n - i >= s - 1&& i <= 3; i++, sign *= -1)
         r += probability_bnk_an(n, i, 0, p) * intersect_funcg(n - i, s, p);
@@ -204,53 +205,4 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
 
     return r;
 }
-
-
-double funch(int n, int s, protocol_params_t *p)
-{
-    static struct hashtable *hash_table = NULL;
-    key_t *hash_key;
-    double *hash_res;
-    
-    double r = 0;
-    int i, sign;
-
-    assert(n > 0);
-
-    if (n < s) 
-        return 0;
-
-    if (hash_table == NULL)
-        hash_table = create_hashtable(16, key_hash, key_equal);
-    
-    hash_key = create_key_protocol_nk(p, n, n, 0); 
-    hash_res = hashtable_search(hash_table, hash_key);
-    if (hash_res != NULL) {
-        free(hash_key);
-        return *hash_res;
-    }
-
-    r += intersect_funcf(n - 2, s, p) * 
-        (probability_ank_bn(n, 1, 1, p) + probability_bnk_an(n, 1, 1, p));
-
-    r += intersect_funcg(n - 1, s, p) *
-        (1 - probability_slotn(p) - probability_slotn1(p) +
-         probability_bnk_bn(n, 1, 0, p));
-
-    for (i = 2, sign = -1; n - i >= s && i <= 3; i++, sign *= -1) 
-        r += sign * probability_ank_bn(n, i, 1, p) * 
-            intersect_funcf(n - i - 1, s, p);
-    
-    for (i = 2, sign = -1; n - i >= s - 1 && i <= 3; i++, sign *= -1) 
-        r += sign * probability_bnk_bn(n, i, 1, p) * 
-            intersect_funcg(n - i, s, p);
-    
-    hash_res = malloc(sizeof(double));
-    *hash_res = r;
-    hashtable_insert(hash_table, hash_key, hash_res);
-
-    return r;
-}
-
-
 

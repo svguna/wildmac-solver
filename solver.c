@@ -80,8 +80,8 @@ int main()
     printf("\n");
     
     for (n = 0; n < 0; n++) {
-        printf("    union_f(%d): %f\n", n, union_funcf(n, &params));
-        printf("intersect_f(%d): %f\n", n, intersect_funcf(n, 0, &params));
+        printf("    union_f(%d): %f\n", n, contact_union(n, &params));
+        printf("intersect_f(%d): %f\n", n, contact_intersect(n, 0, &params));
     }
     return 0;
 }
