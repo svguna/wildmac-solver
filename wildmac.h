@@ -9,6 +9,7 @@ struct protocol_params {
 };
 typedef struct protocol_params protocol_params_t;
 
+#define get_lambda(T) (trx * M_PI * 2 / T)
 #define ACTIVE(p) (2 * M_PI - (p)->on)
 #define SET_ON(p) (p)->on = ((p)->samples + 1) * (p)->tau + (p)->lambda
 

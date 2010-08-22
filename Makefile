@@ -5,16 +5,16 @@ SOURCES=$(shell ls *.c)
 OBJECTS=$(SOURCES:.c=.o)
 
 ifeq ($(UNAME), Linux)
-LDFLAGS = -lgsl -lgslcblas
+LDFLAGS = -lgsl -lgslcblas -lnlopt
 INCDIRS =
 endif
 
 ifeq ($(UNAME), Darwin)
-LDFLAGS = -L/opt/local/lib -lgsl
+LDFLAGS = -L/opt/local/lib -lgsl -lnlopt
 INCDIRS = -I/opt/local/include
 endif
 
-CFLAGS += ${LDFLAGS} ${INCDIRS}
+CFLAGS += ${LDFLAGS} ${INCDIRS} -g 
 
 all: solver
 

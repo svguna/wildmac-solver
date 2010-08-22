@@ -38,6 +38,8 @@ double contact_union(int n, protocol_params_t *p)
     double r = 0;
     int i;
 
+//    printf("slot %d, protocol params: tau = %f, lambda = %f, samples = %d\n",
+//            n, p->tau, p->lambda, p->samples);
     if (n < 0) 
         return 0;
     
