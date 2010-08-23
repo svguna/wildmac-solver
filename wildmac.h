@@ -25,11 +25,15 @@ struct protocol_params {
     double lambda;
     int samples;
     double on; // solely to improve performance
+    double active; // solely to improve performance
+    double active2; // solely to improve performance
+
 };
 typedef struct protocol_params protocol_params_t;
 
 #define get_lambda(T) (trx * M_PI * 2 / T)
-#define ACTIVE(p) (2 * M_PI - (p)->on)
+#define SET_ACTIVE(p) (p)->active = 2 * M_PI - (p)->on;\
+                      (p)->active2 = (p)->active * (p)->active
 #define SET_ON(p) (p)->on = ((p)->samples + 1) * (p)->tau + (p)->lambda
 
 #define HASH_SIZE 16

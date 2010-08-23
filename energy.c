@@ -91,6 +91,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 
     params->tau = ub;
     SET_ON(params);
+    SET_ACTIVE(params);
 
     if (contact_union(slot, params) < prob_bound)
         return NO_SOLUTION;
@@ -98,6 +99,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 
     params->tau = lb; 
     SET_ON(params);
+    SET_ACTIVE(params);
     
     if (contact_union(slot, params) > prob_bound) {
         *energy = last_energy;
@@ -109,6 +111,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
         
         params->tau = middle;
         SET_ON(params);
+        SET_ACTIVE(params);
         
         prob = contact_union(slot, params);
 

@@ -27,10 +27,9 @@
 
 double probability_an_bn(protocol_params_t *p)
 {
-    double active = ACTIVE(p);
     return (p->on - p->tau - p->lambda)  *
         (4 * M_PI - p->on + p->tau - p->lambda) / 
-        4 / M_PI / active;
+        4 / M_PI / p->active;
 }
 
 
@@ -56,8 +55,7 @@ double probability_a0_bm1(protocol_params_t *p)
 
 double probability_bn_an(protocol_params_t *p)
 {
-    double active = ACTIVE(p);
-    return (p->on - p->tau - p->lambda) / 4 / M_PI / active *
+    return (p->on - p->tau - p->lambda) / 4 / M_PI / p->active *
         (4 * M_PI - 3 * p->on - p->tau + p->lambda);
 }
 

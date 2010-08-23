@@ -30,15 +30,16 @@
 static double pdf_an_bn1(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->protocol->on - 4 * M_PI < x && x < p->protocol->on - 2 * M_PI)
-        return (x + 4 * M_PI - p->protocol->on) / 2 / M_PI / tmp;
+        return (x + 4 * M_PI - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
 
     if (p->protocol->on - 2 * M_PI < x && x < -p->protocol->on)
-        return 1 / tmp;
+        return 1 / p->protocol->active;
     if (-p->protocol->on < x && x < 2 * M_PI - p->protocol->on)
-        return (2 * M_PI - x - p->protocol->on) / 2 / M_PI / tmp;
+        return (2 * M_PI - x - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
         
     return 0;
 }
@@ -47,14 +48,15 @@ static double pdf_an_bn1(double x, void *params)
 static double pdf_an_bn(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->protocol->on - 2 * M_PI < x && x < p->protocol->on)
-        return (x + 2 * M_PI - p->protocol->on) / 2 / M_PI / tmp;
+        return (x + 2 * M_PI - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
     if (p->protocol->on < x && x < 2 * M_PI - p->protocol->on)
-        return 1 / tmp;
+        return 1 / p->protocol->active;
     if (2 * M_PI - p->protocol->on < x && x < 4 * M_PI - p->protocol->on)
-        return (4 * M_PI - x - p->protocol->on) / 2 / M_PI / tmp;
+        return (4 * M_PI - x - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
 
     return 0;
 }
@@ -63,20 +65,21 @@ static double pdf_an_bn(double x, void *params)
 static double pdf_an_ank(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->k == 0)
         return 1;
 
     if (2 * (p->k - 1) * M_PI + p->protocol->on < x &&
             x < 2 * p->k * M_PI)
-        return (x + 2 * (1 - p->k) * M_PI - p->protocol->on) / tmp / tmp;
+        return (x + 2 * (1 - p->k) * M_PI - p->protocol->on) / 
+            p->protocol->active2;
     
     if (2 * p->k * M_PI < x && x < 2 * (p->k + 1) * M_PI - p->protocol->on)
-        return (2 * (1 + p->k) * M_PI - x - p->protocol->on) / tmp / tmp;
+        return (2 * (1 + p->k) * M_PI - x - p->protocol->on) / 
+            p->protocol->active2;
     
     if (x == 2 * p->k * M_PI)
-        return 1 / tmp;
+        return 1 / p->protocol->active;
 
     return 0;
 }
@@ -85,20 +88,21 @@ static double pdf_an_ank(double x, void *params)
 static double pdf_an_bnk(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->k == 1)
         return pdf_an_bn1(x, params);
 
     if (2 * (p->k - 2) * M_PI + p->protocol->on < x &&
             x < 2 * (p->k - 1) * M_PI)
-        return (x + 2 * (2 - p->k) * M_PI - p->protocol->on) / 2 / M_PI / tmp;
+        return (x + 2 * (2 - p->k) * M_PI - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
     
     if (2 * (p->k - 1) * M_PI < x && x < 2 * p->k * M_PI)
         return 1 / 2 / M_PI;
 
     if (2 * p->k * M_PI < x && x < 2 * (p->k + 1) * M_PI - p->protocol->on)
-        return (2 * (p->k + 1) * M_PI - x - p->protocol->on) / 2 / M_PI / tmp;
+        return (2 * (p->k + 1) * M_PI - x - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
 
     return 0;
 }
@@ -108,19 +112,20 @@ static double pdf_an_bnk(double x, void *params)
 static double pdf_bnk_bn(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->k == 0)
         return 1;
 
     if (p->protocol->on - 2 * (1 + p->k) * M_PI < x && x < -2 * p->k * M_PI)
-        return (x + 2 * (1 + p->k) * M_PI - p->protocol->on) / tmp / tmp;
+        return (x + 2 * (1 + p->k) * M_PI - p->protocol->on) / 
+            p->protocol->active2;
     
     if (-2 * p->k * M_PI < x && x < 2 * (1 - p->k) * M_PI - p->protocol->on)
-        return (2 * (1 - p->k) * M_PI - x - p->protocol->on) / tmp / tmp;
+        return (2 * (1 - p->k) * M_PI - x - p->protocol->on) / 
+            p->protocol->active2;
 
     if (x == -2 * p->k * M_PI)
-        return 1 / tmp;
+        return 1 / p->protocol->active;
     
     return 0;
 }
@@ -129,20 +134,21 @@ static double pdf_bnk_bn(double x, void *params)
 static double pdf_ank_bn(double x, void *params)
 {
     chain_params_t *p = (chain_params_t *) params;
-    double tmp = ACTIVE(p->protocol);
 
     if (p->k == 0)
         return pdf_an_bn(x, params);
 
     if (p->protocol->on - 2 * (2 + p->k) * M_PI < x && 
             x < -2 * (1 + p->k) * M_PI)
-        return (x + 4 * M_PI - p->protocol->on) / 2 / M_PI / tmp;
+        return (x + 4 * M_PI - p->protocol->on) / 2 / M_PI / 
+            p->protocol->active;
 
     if (-2 * (1 + p->k) * M_PI < x && x < -2 * p->k * M_PI)
         return 1 / 2 / M_PI;
 
     if (-2 * p->k * M_PI < x && 2 * (1 - p->k) * M_PI - p->protocol->on)
-        return (2 * M_PI - p->protocol->on - x) / 2 / M_PI / tmp;
+        return (2 * M_PI - p->protocol->on - x) / 2 / M_PI / 
+            p->protocol->active;
 
     return 0;
 }
