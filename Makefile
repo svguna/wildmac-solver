@@ -14,6 +14,11 @@ LDFLAGS = -L/opt/local/lib -lgsl -lpthread
 INCDIRS = -I/opt/local/include
 endif
 
+ifeq ($(NETSERVER), true)
+	LDFLAGS = -L/shared/home-05/guna/installs/lib -lgsl -lgslcblas -lpthread
+	INCDIRS = -I/shared/home-05/guna/installs/include
+endif
+
 CFLAGS += ${INCDIRS} -g
 
 all: solver
