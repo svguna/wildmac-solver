@@ -8,7 +8,6 @@
 
 int main()
 {
-    int n;
     protocol_params_t params;
     double energy, period;
     

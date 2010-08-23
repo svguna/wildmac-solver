@@ -10,7 +10,7 @@ INCDIRS =
 endif
 
 ifeq ($(UNAME), Darwin)
-LDFLAGS = -L/opt/local/lib -lgsl -lnlopt
+LDFLAGS = -L/opt/local/lib -lgsl 
 INCDIRS = -I/opt/local/include
 endif
 
