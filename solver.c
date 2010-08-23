@@ -60,9 +60,10 @@ int main(int narg, char *varg[])
     assert(probability < 1);
     assert(probability > 0);
     
+    print_boilerplate();
+
     energy = get_protocol_parameters(latency, probability, &period, &params);
 
-    print_boilerplate();
     if (energy == DBL_MAX) {
         printf("No suitable configuration found.\n");
         return -1;
