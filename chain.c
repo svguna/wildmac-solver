@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <gsl/gsl_math.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "wildmac.h"
 #include "probability.h"
@@ -31,6 +32,7 @@ double probability_contact(int n, protocol_params_t *p)
 
 double contact_union(int n, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -43,8 +45,10 @@ double contact_union(int n, protocol_params_t *p)
     if (n < 0) 
         return 0;
     
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -76,6 +80,7 @@ double contact_union(int n, protocol_params_t *p)
 
 static double union_funcg(int n, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -86,8 +91,10 @@ static double union_funcg(int n, protocol_params_t *p)
     if (n < 0) 
         return 0;
     
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -119,6 +126,7 @@ static double union_funcg(int n, protocol_params_t *p)
 
 double contact_intersect(int n, int s, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -129,8 +137,10 @@ double contact_intersect(int n, int s, protocol_params_t *p)
     if (n < s) 
         return 0;
 
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -167,6 +177,7 @@ double contact_intersect(int n, int s, protocol_params_t *p)
 
 static double intersect_funcg(int n, int s, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -179,8 +190,10 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
     if (n == s - 1)
         return 1;
     
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, 0, n); 
     hash_res = hashtable_search(hash_table, hash_key);

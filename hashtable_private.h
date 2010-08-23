@@ -3,6 +3,7 @@
 #ifndef __HASHTABLE_PRIVATE_CWC22_H__
 #define __HASHTABLE_PRIVATE_CWC22_H__
 
+#include <pthread.h>
 #include "hashtable.h"
 
 /*****************************************************************************/
@@ -21,6 +22,7 @@ struct hashtable {
     unsigned int primeindex;
     unsigned int (*hashfn) (void *k);
     int (*eqfn) (void *k1, void *k2);
+    pthread_mutex_t mutex;
 };
 
 /*****************************************************************************/

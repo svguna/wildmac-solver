@@ -4,6 +4,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_monte.h>
 #include <gsl/gsl_monte_plain.h>
+#include <pthread.h>
 
 #include "wildmac.h"
 #include "probability.h"
@@ -16,6 +17,7 @@
 
 double probability_ank_bn(int n, int k, int negate, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -52,8 +54,10 @@ double probability_ank_bn(int n, int k, int negate, protocol_params_t *p)
         return probability_an_bn(p);
     }
 
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, negate, k); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -120,6 +124,7 @@ double probability_ank_bn(int n, int k, int negate, protocol_params_t *p)
 
 double probability_bnk_bn(int n, int k, int negate, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -150,8 +155,10 @@ double probability_bnk_bn(int n, int k, int negate, protocol_params_t *p)
     if (n - k < -1) 
         return 0;
 
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, negate, k); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -217,6 +224,7 @@ double probability_bnk_bn(int n, int k, int negate, protocol_params_t *p)
 
 double probability_ank_an(int n, int k, int negate, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -251,8 +259,10 @@ double probability_ank_an(int n, int k, int negate, protocol_params_t *p)
     if (n - k < 0) 
         return 0;
 
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, negate, k); 
     hash_res = hashtable_search(hash_table, hash_key);
@@ -291,6 +301,7 @@ double probability_ank_an(int n, int k, int negate, protocol_params_t *p)
 
 double probability_bnk_an(int n, int k, int negate, protocol_params_t *p)
 {
+    static pthread_mutex_t hash_mutex = PTHREAD_MUTEX_INITIALIZER;
     static struct hashtable *hash_table = NULL;
     key_t *hash_key;
     double *hash_res;
@@ -335,8 +346,10 @@ double probability_bnk_an(int n, int k, int negate, protocol_params_t *p)
         return res;
     }
 
+    pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
         hash_table = create_hashtable(16, key_hash, key_equal);
+    pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, negate, k); 
     hash_res = hashtable_search(hash_table, hash_key);

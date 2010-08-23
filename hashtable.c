@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <pthread.h>
+
+/*
+Thread-safe mechanism added by Stefan Guna
+*/
 
 /*
 Credit for primes table: Aaron Krowne
@@ -49,6 +54,9 @@ create_hashtable(unsigned int minsize,
     h->hashfn       = hashf;
     h->eqfn         = eqf;
     h->loadlimit    = (unsigned int) ceil(size * max_load_factor);
+#ifdef THREADED_SOLVER
+    pthread_mutex_init(&h->mutex, NULL);
+#endif
     return h;
 }
 
@@ -139,6 +147,7 @@ hashtable_insert(struct hashtable *h, void *k, void *v)
     /* This method allows duplicate keys - but they shouldn't be used */
     unsigned int index;
     struct entry *e;
+    pthread_mutex_lock(&h->mutex);
     if (++(h->entrycount) > h->loadlimit)
     {
         /* Ignore the return value. If expand fails, we should
@@ -148,13 +157,18 @@ hashtable_insert(struct hashtable *h, void *k, void *v)
         hashtable_expand(h);
     }
     e = (struct entry *)malloc(sizeof(struct entry));
-    if (NULL == e) { --(h->entrycount); return 0; } /*oom*/
+    if (NULL == e) { 
+        --(h->entrycount);
+        pthread_mutex_unlock(&h->mutex);
+        return 0; 
+    } /*oom*/
     e->h = hash(h,k);
     index = indexFor(h->tablelength,e->h);
     e->k = k;
     e->v = v;
     e->next = h->table[index];
     h->table[index] = e;
+    pthread_mutex_unlock(&h->mutex);
     return -1;
 }
 
@@ -164,15 +178,20 @@ hashtable_search(struct hashtable *h, void *k)
 {
     struct entry *e;
     unsigned int hashvalue, index;
+    pthread_mutex_lock(&h->mutex);
     hashvalue = hash(h,k);
     index = indexFor(h->tablelength,hashvalue);
     e = h->table[index];
     while (NULL != e)
     {
         /* Check hash value to short circuit heavier comparison */
-        if ((hashvalue == e->h) && (h->eqfn(k, e->k))) return e->v;
+        if ((hashvalue == e->h) && (h->eqfn(k, e->k))) {
+            pthread_mutex_unlock(&h->mutex);
+            return e->v;
+        }
         e = e->next;
     }
+    pthread_mutex_unlock(&h->mutex);
     return NULL;
 }
 
@@ -187,7 +206,8 @@ hashtable_remove(struct hashtable *h, void *k)
     struct entry **pE;
     void *v;
     unsigned int hashvalue, index;
-
+    
+    pthread_mutex_lock(&h->mutex);
     hashvalue = hash(h,k);
     index = indexFor(h->tablelength,hash(h,k));
     pE = &(h->table[index]);
@@ -202,11 +222,13 @@ hashtable_remove(struct hashtable *h, void *k)
             v = e->v;
             freekey(e->k);
             free(e);
+            pthread_mutex_unlock(&h->mutex);
             return v;
         }
         pE = &(e->next);
         e = e->next;
     }
+    pthread_mutex_unlock(&h->mutex);
     return NULL;
 }
 
@@ -237,6 +259,9 @@ hashtable_destroy(struct hashtable *h, int free_values)
         }
     }
     free(h->table);
+#ifdef THREADED_SOLVER
+    pthread_mutex_destroy(&h->mutex);
+#endif
     free(h);
 }
 

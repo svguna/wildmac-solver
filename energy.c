@@ -2,16 +2,46 @@
 #include <gsl/gsl_math.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 #include "energy.h"
 #include "chain.h"
-
+#include "wildmac.h"
+#include "pthread_sem.h"
 
 enum {
     NO_SOLUTION = -1,
     TRIVIAL,
     TOL_REACHED,
     MAXCALL_REACHED
+};
+
+
+struct worker_task {
+    double lb, ub;
+    double T;
+    int slot;
+    protocol_params_t pc;
+};
+
+
+struct worker_data {
+    double probability;
+    struct worker_task *task;
+
+    int *finish;
+
+    /* result is outputed in the following */
+    double *min_energy;
+    protocol_params_t *params;
+    double *period;
+
+    pthread_sem_t *sem_new_task;
+    pthread_sem_t *sem_task_buffered;
+    pthread_sem_t *sem_cpu_available;
+    pthread_mutex_t *task_mutex;
 };
 
 
@@ -85,49 +115,137 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 }
 
 
+static void *worker_thread(void *data)
+{
+    int res;
+    struct worker_data *wd = (struct worker_data *) data;
+    struct worker_task task;
+    double energy;
+
+    pthread_sem_up(1, wd->sem_cpu_available);
+    while (!*wd->finish) {
+        pthread_mutex_lock(wd->task_mutex);
+        pthread_sem_down(1, wd->sem_new_task, wd->task_mutex); 
+        
+        if (*wd->finish) {
+            pthread_mutex_unlock(wd->task_mutex);
+            break;
+        }
+
+        memcpy(&task, wd->task, sizeof(struct worker_task));
+
+        pthread_sem_up(1, wd->sem_task_buffered);
+        pthread_mutex_unlock(wd->task_mutex);
+
+        res = find_optimal(wd->probability, task.lb, task.ub, task.T, task.slot,
+                &task.pc, &energy);
+        if (res == NO_SOLUTION) {
+            pthread_sem_up(1, wd->sem_cpu_available);
+            continue;
+        }
+        
+        pthread_mutex_lock(wd->task_mutex);
+
+        if (energy > *wd->min_energy) {
+            pthread_sem_up(1, wd->sem_cpu_available);
+            pthread_mutex_unlock(wd->task_mutex);
+            continue;
+        }
+
+        *wd->min_energy = energy;
+        memcpy(wd->params, &task.pc, sizeof(protocol_params_t));
+        *wd->period = task.T;
+        
+        pthread_sem_up(1, wd->sem_cpu_available);
+        pthread_mutex_unlock(wd->task_mutex);
+    }
+    return NULL;
+}
+
+
 double get_protocol_parameters(double latency, double probability,
         double *period, protocol_params_t *params)
 {
-    int i, max_slots; 
+    int i, j, max_slots, max_samples;
     double min_energy = DBL_MAX;
+    double lambda;
+    pthread_t *threads;
+    int thread_num = sysconf(_SC_NPROCESSORS_ONLN);
+
+    int finish = 0;
+    
+    pthread_sem_t sem_cpu_available;
+    pthread_sem_t sem_new_task;
+    pthread_sem_t sem_task_buffered;
+    pthread_mutex_t task_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    struct worker_task task;
+    struct worker_data worker_data = {
+        .probability = probability,
+        .task = &task,
+        
+        .finish = &finish,
+        
+        .min_energy = &min_energy,
+        .params = params,
+        .period = period,
+
+        .sem_new_task = &sem_new_task,
+        .sem_task_buffered = &sem_task_buffered,
+        .sem_cpu_available = &sem_cpu_available,
+        .task_mutex = &task_mutex,
+    };
 
     assert(period != NULL);
     assert(params != NULL);
+    
+    pthread_sem_init(0, &sem_cpu_available);
+    pthread_sem_init(0, &sem_new_task);
+    pthread_sem_init(0, &sem_task_buffered);
 
     latency *= 100;
     max_slots = latency / 2 / (2 * MINttx + trx);
 
+    threads = malloc(thread_num * sizeof(pthread_t));
+    for (i = 0; i < thread_num; i++)
+        pthread_create(threads + i, NULL, worker_thread, &worker_data);
+
+    pthread_mutex_lock(&task_mutex);
+
+    pthread_sem_down(1, &sem_cpu_available, &task_mutex);
+    
     for (i = 0; i < max_slots; i++) {
-        double T = latency / (i + 1);
-        double lambda = get_lambda(T);
-        int j, max_samples;
-        double tx_lb = 2 * lambda;
+        task.slot = i;
+        task.T = latency / (i + 1);
+        lambda = get_lambda(task.T);
+        task.lb = 2 * lambda;
 
-        if (2 * M_PI * MINttx / T > tx_lb)
-            tx_lb = 2 * M_PI * MINttx / T;
+        if (2 * M_PI * MINttx / task.T > task.lb)
+            task.lb = 2 * M_PI * MINttx / task.T;
 
-        max_samples = (M_PI - lambda) / tx_lb - 1;
+        max_samples = (M_PI - lambda) / task.lb - 1;
 
         for (j = 1; j <= max_samples; j++) {
-            double lb = tx_lb;
-            double ub = (M_PI - lambda) / (j + 1);
-            double energy;
-            protocol_params_t pc = {
-                .lambda = lambda,
-                .samples = j
-            };
-            int res;
-            
-            res = find_optimal(probability, lb, ub, T, i, &pc, &energy);
-            if (res == NO_SOLUTION || energy > min_energy)
-                continue;
+            task.ub = (M_PI - lambda) / (j + 1);
+            task.pc.lambda = lambda;
+            task.pc.samples = j;
 
-            min_energy = energy;
-            memcpy(params, &pc, sizeof(protocol_params_t));
-            *period = T;
+            pthread_sem_up(1, &sem_new_task);
+            pthread_sem_down(1, &sem_task_buffered, &task_mutex);
+            pthread_sem_down(1, &sem_cpu_available, &task_mutex);
         }
     }
+    pthread_mutex_unlock(&task_mutex);
+    
+    finish = 1;
+    pthread_mutex_lock(&task_mutex);
+    pthread_sem_up(thread_num, &sem_new_task);
+    pthread_mutex_unlock(&task_mutex);
 
+    for (i = 0; i < thread_num; i++)
+        pthread_join(threads[i], NULL);
+    
+    free(threads);
     return min_energy;
 }
 
