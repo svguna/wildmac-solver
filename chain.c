@@ -66,7 +66,7 @@ double contact_union(int n, protocol_params_t *p)
     
     pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
-        hash_table = create_hashtable(16, key_hash, key_equal);
+        hash_table = create_hashtable(16, key_hash, key_equal, &hash_mutex);
     pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
@@ -112,7 +112,7 @@ static double union_funcg(int n, protocol_params_t *p)
     
     pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
-        hash_table = create_hashtable(16, key_hash, key_equal);
+        hash_table = create_hashtable(16, key_hash, key_equal, &hash_mutex);
     pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
@@ -158,7 +158,7 @@ double contact_intersect(int n, int s, protocol_params_t *p)
 
     pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
-        hash_table = create_hashtable(16, key_hash, key_equal);
+        hash_table = create_hashtable(16, key_hash, key_equal, &hash_mutex);
     pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, n, 0); 
@@ -211,7 +211,7 @@ static double intersect_funcg(int n, int s, protocol_params_t *p)
     
     pthread_mutex_lock(&hash_mutex);
     if (hash_table == NULL)
-        hash_table = create_hashtable(16, key_hash, key_equal);
+        hash_table = create_hashtable(16, key_hash, key_equal, &hash_mutex);
     pthread_mutex_unlock(&hash_mutex);
     
     hash_key = create_key_protocol_nk(p, n, 0, n); 

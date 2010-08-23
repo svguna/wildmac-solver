@@ -23,6 +23,8 @@
 #ifndef __HASHTABLE_CWC22_H__
 #define __HASHTABLE_CWC22_H__
 
+#include <pthread.h>
+
 struct hashtable;
 
 /* Example of use:
@@ -94,7 +96,8 @@ struct hashtable;
 struct hashtable *
 create_hashtable(unsigned int minsize,
                  unsigned int (*hashfunction) (void*),
-                 int (*key_eq_fn) (void*,void*));
+                 int (*key_eq_fn) (void*,void*),
+                 pthread_mutex_t *mutex);
 
 /*****************************************************************************
  * hashtable_insert
