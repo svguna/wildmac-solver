@@ -161,14 +161,14 @@ static void *worker_thread(void *data)
                 &task.pc, &energy);
 
         if (res == NO_SOLUTION) {
-            printf("finished %dx%.2fms samples=%d no solution\n", task.slot, 
+            printf("finished %dx%.2fms samples=%d no solution\n", task.slot + 1,
                     task.T / 100, task.pc.samples); 
             pthread_sem_up(1, wd->sem_cpu_available);
             continue;
         }
         
         printf("finished %dx%.2fms samples=%d beacon=%.2f dW/dt=%.2f\n", 
-                task.slot, task.T / 100, task.pc.samples, 
+                task.slot + 1, task.T / 100, task.pc.samples, 
                 task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
         
         pthread_mutex_lock(wd->task_mutex);
