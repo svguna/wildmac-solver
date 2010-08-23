@@ -82,7 +82,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 {
     unsigned long calls;
     double middle = (ub - lb) / 2 + lb;
-    double last_energy, new_energy;
+    double last_energy, new_energy = DBL_MAX;
     
     assert(energy != NULL);
     assert(params != NULL);

@@ -19,7 +19,7 @@ ifeq ($(NETSERVER), true)
 	INCDIRS = -I/shared/home-05/guna/installs/include
 endif
 
-CFLAGS += ${INCDIRS} -g
+CFLAGS += ${INCDIRS} -O3
 
 all: solver
 
