@@ -1,3 +1,4 @@
+#include <sys/time.h>
 #include <assert.h>
 #include <gsl/gsl_math.h>
 #include <stdio.h>
@@ -139,10 +140,17 @@ static void *worker_thread(void *data)
 
         res = find_optimal(wd->probability, task.lb, task.ub, task.T, task.slot,
                 &task.pc, &energy);
+
         if (res == NO_SOLUTION) {
+            printf("finished %dx%.2fms samples=%d no solution\n", task.slot, 
+                    task.T / 100, task.pc.samples); 
             pthread_sem_up(1, wd->sem_cpu_available);
             continue;
         }
+        
+        printf("finished %dx%.2fms samples=%d beacon=%.2f dW/dt=%.2f\n", 
+                task.slot, task.T / 100, task.pc.samples, 
+                task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
         
         pthread_mutex_lock(wd->task_mutex);
 
@@ -163,9 +171,24 @@ static void *worker_thread(void *data)
 }
 
 
+unsigned long time_delta(struct timeval *start, struct timeval *end)
+{
+    double t1, t2;
+
+    t1 = (double) start->tv_sec * 1000 + (double) start->tv_usec / 1000;
+    t2 = (double) end->tv_sec * 1000 + (double) end->tv_usec / 1000;
+    return t2 - t1;
+}
+
+
 double get_protocol_parameters(double latency, double probability,
         double *period, protocol_params_t *params)
 {
+    struct timeval start, end;
+    struct timezone tz;
+    unsigned long total_states = 0, states_completed = 0;
+    unsigned long elapsed, estimated;
+
     int i, j, max_slots, max_samples;
     double min_energy = DBL_MAX;
     double lambda;
@@ -196,22 +219,40 @@ double get_protocol_parameters(double latency, double probability,
         .task_mutex = &task_mutex,
     };
 
+
     assert(period != NULL);
     assert(params != NULL);
     
+
     pthread_sem_init(0, &sem_cpu_available);
     pthread_sem_init(0, &sem_new_task);
     pthread_sem_init(0, &sem_task_buffered);
 
+
     latency *= 100;
     max_slots = latency / 2 / (2 * MINttx + trx);
+
 
     threads = malloc(thread_num * sizeof(pthread_t));
     for (i = 0; i < thread_num; i++)
         pthread_create(threads + i, NULL, worker_thread, &worker_data);
 
-    pthread_mutex_lock(&task_mutex);
 
+    for (i = 0; i < max_slots; i++) {
+        task.slot = i;
+        task.T = latency / (i + 1);
+        lambda = get_lambda(task.T);
+        task.lb = 2 * lambda;
+
+        if (2 * M_PI * MINttx / task.T > task.lb)
+            task.lb = 2 * M_PI * MINttx / task.T;
+
+        total_states += (M_PI - lambda) / task.lb - 1;
+    }
+
+
+    gettimeofday(&start, &tz);
+    pthread_mutex_lock(&task_mutex);
     pthread_sem_down(1, &sem_cpu_available, &task_mutex);
     
     for (i = 0; i < max_slots; i++) {
@@ -233,10 +274,20 @@ double get_protocol_parameters(double latency, double probability,
             pthread_sem_up(1, &sem_new_task);
             pthread_sem_down(1, &sem_task_buffered, &task_mutex);
             pthread_sem_down(1, &sem_cpu_available, &task_mutex);
+            
+            states_completed++;
+            gettimeofday(&end, &tz);
+            elapsed = time_delta(&start, &end);
+            estimated = elapsed * total_states / states_completed;
+            printf("explored %6.2f%% remaining %lds\n", 
+                    states_completed * 100. / total_states,
+                    (estimated - elapsed) / 1000);
         }
     }
     pthread_mutex_unlock(&task_mutex);
-    
+    gettimeofday(&end, &tz);
+    elapsed = time_delta(&start, &end);
+
     finish = 1;
     pthread_mutex_lock(&task_mutex);
     pthread_sem_up(thread_num, &sem_new_task);
@@ -244,6 +295,9 @@ double get_protocol_parameters(double latency, double probability,
 
     for (i = 0; i < thread_num; i++)
         pthread_join(threads[i], NULL);
+    
+    printf("\nexplored a total of %ld states in %ld.%lds\n\n", total_states,
+            elapsed / 1000, elapsed % 1000);
     
     free(threads);
     return min_energy;
