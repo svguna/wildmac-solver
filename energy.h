@@ -25,11 +25,6 @@
 // Currents are given in tens of uA.
 // Time is given in tens of us.
 
-#define Itx 1740
-#define Irx 1970
-#define Ioff 2
-#define trx 25
-#define MINttx 1000
 #define MAX_EVAL 100
 
 #define MAX_CALLS 1000

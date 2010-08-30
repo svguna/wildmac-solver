@@ -1,8 +1,11 @@
 UNAME := $(shell uname)
 CFLAGS = -Wall
 
-SOURCES=$(shell ls *.c)
-OBJECTS=$(SOURCES:.c=.o)
+PROB_SOURCES=chain.c hashtable.c probability_chain.c energy.c pdf_chain.c pthread_sem.c hashkeys.c probability.c prob-solver.c
+PROB_OBJECTS=$(PROB_SOURCES:.c=.o)
+
+DET_SOURCES=det-solver.c
+DET_OBJECTS=$(DET_SOURCES:.c=.o)
 
 ifeq ($(UNAME), Linux)
 LDFLAGS = -lgsl -lgslcblas -lpthread
@@ -21,13 +24,16 @@ endif
 
 CFLAGS += ${INCDIRS} -O3
 
-all: solver
+all: det-solver prob-solver
 
-solver: ${OBJECTS}
-	${CC} -o $@ ${OBJECTS} ${LDFLAGS} ${CFLAGS}
+prob-solver: ${PROB_OBJECTS}
+	${CC} -o $@ ${PROB_OBJECTS} ${LDFLAGS} ${CFLAGS}
+
+det-solver: ${DET_OBJECTS}
+	${CC} -o $@ ${DET_OBJECTS}
 
 %.o: %.c
 	${CC} -c $< ${INCDIRS} ${CFLAGS}
 
 clean:
-	rm *.o solver
+	rm *.o prob-solver det-solver

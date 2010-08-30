@@ -31,6 +31,13 @@ struct protocol_params {
 };
 typedef struct protocol_params protocol_params_t;
 
+// time values expressed in tens of us
+#define Itx 1740
+#define Irx 1970
+#define Ioff 2
+#define trx 25
+#define MINttx 1000
+
 #define get_lambda(T) (trx * M_PI * 2 / T)
 #define SET_ACTIVE(p) (p)->active = 2 * M_PI - (p)->on;\
                       (p)->active2 = (p)->active * (p)->active
