@@ -65,8 +65,7 @@ struct worker_data {
 };
 
 
-static inline double energy_per_time(double T, double tau, double lambda, 
-        int samples)
+static inline double energy_per_time(double tau, double lambda, int samples)
 {
     double res = 0;
 
@@ -74,7 +73,7 @@ static inline double energy_per_time(double T, double tau, double lambda,
     res += lambda * samples * Irx;
     res += (2 * M_PI - tau - (samples + 1) * lambda) * Ioff;
 
-    return res * 100 / T;
+    return res / 2 / M_PI;
 }
 
 
@@ -96,8 +95,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 
     if (contact_union(slot, params) < prob_bound)
         return NO_SOLUTION;
-    last_energy = energy_per_time(T, params->tau, params->lambda, 
-            params->samples);
+    last_energy = energy_per_time(params->tau, params->lambda, params->samples);
 
     params->tau = lb; 
     SET_ON(params);
@@ -120,7 +118,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
         if (prob >= prob_bound) { 
             double delta;
             
-            new_energy = energy_per_time(T, params->tau, params->lambda, 
+            new_energy = energy_per_time(params->tau, params->lambda, 
                     params->samples);
             delta = fabs(new_energy - last_energy);
             if (delta / last_energy < TOL_REL) {
@@ -175,7 +173,7 @@ static void *worker_thread(void *data)
         
         printf("finished %dx%.2fms samples=%d tau=%.2fms dW/dt=%.2f\n", 
                 task.slot + 1, task.T / 100, task.pc.samples, 
-                task.pc.tau * task.T / 100 / 2 / M_PI, energy * 1000); 
+                task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
         
         pthread_mutex_lock(wd->task_mutex);
 

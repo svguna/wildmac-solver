@@ -37,7 +37,7 @@ static double energy_per_time(double tau, int s)
     w += Itx * (tau + lambda);
     w += (s + 1) * Irx * lambda;
     w += Ioff * (2 * M_PI - tau - 2 * lambda - s * lambda);
-    return w * 100 / period;
+    return w / 2 / M_PI;
 }
 
 
@@ -101,7 +101,7 @@ int main(int narg, char *varg[])
     }
     period /= 100;
 
-    printf("energy per sec: %f\n", w * 1000);
+    printf("energy per sec: %f\n", w);
     printf("        period: %.2fms\n", period);
     printf("        beacon: %.2fms\n", period * tau / 2 / M_PI + trx / 100.);
     printf("    CCA period: %.2fms\n", period * tau / 2 / M_PI);

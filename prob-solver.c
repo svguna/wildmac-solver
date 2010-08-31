@@ -62,7 +62,7 @@ int main(int narg, char *varg[])
 
     period /= 100;
 
-    printf("energy per sec: %f\n", energy * 1000);
+    printf("energy per sec: %f\n", energy);
     printf("        period: %.2fms\n", period);
     printf("        beacon: %.2fms\n", period * params.tau / 2 / M_PI + 
             trx / 100.);
