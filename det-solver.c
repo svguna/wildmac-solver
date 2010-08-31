@@ -1,6 +1,6 @@
 /*
- * wildmac-prob-solver - returns the proper configuration of the wildmac 
- * protocol, for a deterministic latency.
+ * wildmac-solver - returns the proper configuration of the wildmac protocol,
+ * given a desired detection latency and probability.
  * Copyright (C) 2010  Stefan Guna
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,90 +19,94 @@
  */
 
 #include <stdio.h>
+#include <gsl/gsl_math.h>
 #include <math.h>
+#include <assert.h>
+
+#include "common-prints.h"
 #include "wildmac.h"
 
-static double tau_min, lambda, lambda1, lambda2;
 
-static double slot_energy(double tau, int s)
+static double tau_min, lambda, period;
+
+
+static double energy_per_time(double tau, int s)
 {
-    double w;
-    w = (s + 1) * Irx * lambda;
-    w += Irx * (tau + lambda);
+    double w = 0;
+    
+    w += Itx * (tau + lambda);
+    w += (s + 1) * Irx * lambda;
     w += Ioff * (2 * M_PI - tau - 2 * lambda - s * lambda);
-    return w;
+    return w * 100 / period;
 }
 
 
-static double get_lambda1()
+static double get_protocol_parameters(double *tau, int *s)
 {
-    double sq = lambda * (Irx - Ioff) * (Itx - Ioff) /  M_PI;
-    return sqrt(sq);
+    int smax, i;
+    double w_min = DBL_MAX;
+
+    assert(tau != NULL);
+    assert(s != NULL);
+
+    smax = floor((2 * M_PI - 2 * lambda) / tau_min - 1);
+   
+    for (i = 1; i <= smax; i++) {
+        double w, t;
+        t = M_PI / (i + 1);
+        if (t < tau_min)
+            t = tau_min;
+
+        if ((i + 1) * t + lambda > 2 * M_PI - lambda)
+            continue;
+        w = energy_per_time(t, i);
+
+        if (w > w_min)
+            continue;
+        w_min = w;
+        *tau = t;
+        *s = i;
+    }
+    return w_min;
 }
 
 
-static double get_lambda2()
+int main(int narg, char *varg[])
 {
-    double sq = lambda * (Irx - Ioff) * (Itx - Ioff) / (2 * M_PI - lambda);
-    return -sqrt(sq);
-}
+    double tau = 0, w;
+    int s = 0;
 
+    if (narg != 2) {
+        print_boilerplate();
+        printf("Invalid arguments. Please run the solver as follows:\n\n"
+                "\t%s PERIOD\n\n"
+                "where:\n"
+                "\tPERIOD must be provided in ms.\n\n",
+                varg[0]);
+        return -1;
+    }
+    sscanf(varg[1], "%lf", &period);
+    assert(period * 100 > (MINttx * 2 + trx) * 2);
+    period *= 100; 
 
-int assert_constraints(double tau, int s)
-{
-    printf("%f\n", (s + 1) * tau + lambda);
-    if ((s + 1) * tau > M_PI) 
-        return 0;
-    if ((s + 1) * tau + lambda > 2 * M_PI) 
-        return 0;
-    if (tau < tau_min)
-        return 0;
-    return 1;
-}
+    lambda = get_lambda(period);
+    tau_min = 2 * M_PI * MINttx / period; 
 
+    print_boilerplate();
+    
+    w = get_protocol_parameters(&tau, &s);
+    if (w == DBL_MAX) {
+        printf("No suitable configuration found.\n");
+        return -1;
+    }
+    period /= 100;
 
-int main()
-{
-    double tau, st;
-
-    lambda = get_lambda(100000);
-    tau_min = 2 * M_PI * MINttx / 100000; 
-    lambda1 = get_lambda1();
-    lambda2 = get_lambda2();
-
-    printf("%f\n", tau_min);
-
-    tau = lambda2 * (2 * M_PI - lambda) / (Ioff - Itx);
-    st = (2 * M_PI - lambda) / tau - 1;
-    printf("tau = %f, st = %f\n", tau, st);
-    if (assert_constraints(tau, floor(st)))
-            printf("\tW(floor) = %f\n", slot_energy(tau, floor(st)));
-    if (assert_constraints(tau, ceil(st)))
-        printf("\tW(ceil) = %f\n", slot_energy(tau, ceil(st)));
-
-    tau = lambda1 * M_PI / (Itx - Ioff);
-    st = M_PI / tau - 1;
-    printf("tau = %f, st = %f\n", tau, st);
-    if (assert_constraints(tau, floor(st)))
-        printf("\tW(floor) = %f\n", slot_energy(tau, floor(st)));
-    if (assert_constraints(tau, ceil(st)))
-        printf("\tW(ceil) = %f\n", slot_energy(tau, ceil(st)));
-
-    tau = tau_min;
-    st = (2 * M_PI - lambda) / tau - 1;
-    printf("tau = %f, st = %f\n", tau, st);
-    if (assert_constraints(tau, floor(st)))
-        printf("\tW(floor) = %f\n", slot_energy(tau, floor(st)));
-    if (assert_constraints(tau, ceil(st)))
-        printf("\tW(ceil) = %f\n", slot_energy(tau, ceil(st)));
-
-    st = M_PI / tau - 1;
-    printf("tau = %f, st = %f\n", tau, st);
-    if (assert_constraints(tau, floor(st)))
-        printf("\tW(floor) = %f\n", slot_energy(tau, floor(st)));
-    if (assert_constraints(tau, ceil(st)))
-        printf("\tW(ceil) = %f\n", slot_energy(tau, ceil(st)));
-
+    printf("energy per sec: %f\n", w * 1000);
+    printf("        period: %.2fms\n", period);
+    printf("        beacon: %.2fms\n", period * tau / 2 / M_PI + trx / 100.);
+    printf("    CCA period: %.2fms\n", period * tau / 2 / M_PI);
+    printf("       samples: %d\n\n", s);
+    
     return 0;
 }
 

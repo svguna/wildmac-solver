@@ -21,20 +21,11 @@
 #include <gsl/gsl_math.h>
 #include <assert.h>
 
+#include "common-prints.h"
 #include "probability.h"
 #include "probability_chain.h"
 #include "chain.h"
 #include "energy.h"
-
-
-static void print_boilerplate()
-{
-    printf("wildmac-solver  Copyright (C) 2010  Stefan Guna\n"
-           "This program comes with ABSOLUTELY NO WARRANTY.\n"
-           "This is free software, and you are welcome to redistribute it\n"
-           "under certain conditions; see the accompanying license file\n"
-           "for details.\n\n");
-}
 
 
 int main(int narg, char *varg[])
@@ -54,7 +45,7 @@ int main(int narg, char *varg[])
         return -1;
     }
     sscanf(varg[1], "%lf", &latency);
-    assert(latency * 100 > (MINttx * 2 + Irx) * 2);
+    assert(latency * 100 > (MINttx * 2 + trx) * 2);
     
     sscanf(varg[2], "%lf", &probability);
     assert(probability < 1);
@@ -69,10 +60,14 @@ int main(int narg, char *varg[])
         return -1;
     }
 
-    printf("energy per time: %f\n", energy);
-    printf("         period: %.2fms\n", period);
-    printf("         beacon: %.2fms\n", period * params.tau / 2 / M_PI);
-    printf("        samples: %d\n\n", params.samples);
+    period /= 100;
+
+    printf("energy per sec: %f\n", energy * 1000);
+    printf("        period: %.2fms\n", period);
+    printf("        beacon: %.2fms\n", period * params.tau / 2 / M_PI + 
+            trx / 100.);
+    printf("    CCA period: %.2fms\n", period * params.tau / 2 / M_PI);
+    printf("       samples: %d\n\n", params.samples);
     
     return 0;
 }
