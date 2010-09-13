@@ -268,8 +268,7 @@ double probability_bn1_an(protocol_params_t *p)
 
 double probability_bm1_a0(protocol_params_t *p)
 {
-    double result = (2 * M_PI + p->on - 2 * p->lambda - 
-            (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
+    double result = (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
     return result * probability_bn1_an(p);
 }
 

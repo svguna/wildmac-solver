@@ -62,7 +62,7 @@ static double probability_chain_an(int n, int k, protocol_params_t *p)
     assert(k > 0);
     assert(k < 6);
 
-    if (n - k < -1)
+    if (k > n * 2 + 1)
         return 0;
 
     if (k > 3 && CONSEC5(p) < 2 * M_PI)
@@ -127,8 +127,10 @@ static double probability_chain_an(int n, int k, protocol_params_t *p)
     gsl_monte_plain_free(s);
 
     gsl_rng_free(r);
-    if (n - k == -1)
+    if (n * 2 + 1 - k == 1)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
+    if (n * 2 + 1 - k == 0)
+        res *= (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
 
     hash_res = malloc(sizeof(double));
     *hash_res = res;
@@ -165,7 +167,7 @@ static double probability_chain_bn(int n, int k, protocol_params_t *p)
     assert(k > 0);
     assert(k < 6);
 
-    if (n - k < -1)
+    if (k > 2 * (n + 1))
         return 0;
 
     if (k > 3 && CONSEC5(p) < 2 * M_PI)
@@ -229,11 +231,11 @@ static double probability_chain_bn(int n, int k, protocol_params_t *p)
     gsl_monte_plain_free(s);
 
     gsl_rng_free(r);
-    
-    if (n - k == -1) 
-        res *= (2 * M_PI + p->on - 2 * p->lambda -
-                (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
-
+   
+    if (2 * (n + 1) - k == 1)
+        res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
+    if (2 * (n + 1) - k == 0)
+        res *= (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
 
     hash_res = malloc(sizeof(double));
     *hash_res = res;
