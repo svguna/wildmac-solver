@@ -17,21 +17,20 @@
  * along with this program. If not, see 
  * http://www.gnu.org/licenses/gpl-3.0-standalone.html.
  */
-#ifndef __HASHKEYS_H
-#define __HASHKEYS_H
-
+#ifndef __INTEGRANDS_H
+#define __INTEGRANDS_H
 #include "wildmac.h"
 
-struct key {
+struct chain_params {
     int n;
     int k;
-    protocol_params_t p;
+    protocol_params_t *protocol;
 };
-typedef struct key hashkey_t;
+typedef struct chain_params chain_params_t;
 
-
-hashkey_t *create_key_protocol_nk(protocol_params_t *p, int n, int k);
-unsigned int key_hash(void *k);
-int key_equal(void *k1, void *k2);
+double integrand_n_n(double *x, size_t dim, void *params);
+double integrand_n_n1(double *x, size_t dim, void *params);
+double integrand_chain_bn(double *x, size_t dim, void *params);
+double integrand_chain_an(double *x, size_t dim, void *params);
 
 #endif

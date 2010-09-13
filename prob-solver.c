@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <gsl/gsl_math.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "common-prints.h"
 #include "probability.h"
@@ -33,6 +34,12 @@ int main(int narg, char *varg[])
     protocol_params_t params;
     double energy, period;
     double latency, probability;
+
+    params.tau = M_PI / 10;
+    params.lambda = M_PI / 20;
+    params.samples = 6;
+    SET_ACTIVE(&params);
+    SET_ON(&params);
 
     if (narg != 3) {
         print_boilerplate();
