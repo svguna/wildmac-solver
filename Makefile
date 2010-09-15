@@ -30,7 +30,7 @@ prob-solver: ${PROB_OBJECTS}
 	${CC} -o $@ ${PROB_OBJECTS} ${LDFLAGS} ${CFLAGS}
 
 det-solver: ${DET_OBJECTS}
-	${CC} -o $@ ${DET_OBJECTS}
+	${CC} -o $@ ${DET_OBJECTS} ${LDFLAGS} 
 
 %.o: %.c
 	${CC} -c $< ${INCDIRS} ${CFLAGS}
