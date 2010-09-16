@@ -39,8 +39,10 @@ int pthread_sem_down(int val, pthread_sem_t *sem, pthread_mutex_t *mutex)
 
 int pthread_sem_up(int val, pthread_sem_t *sem)
 {
+    int i;
     sem->val += val;
-    pthread_cond_signal(&sem->cond);
+    for (i = 0; i < val; i++)
+        pthread_cond_signal(&sem->cond);
     return 0;
 }
 
