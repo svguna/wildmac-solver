@@ -290,10 +290,23 @@ double get_protocol_parameters(double latency, double probability,
 
         max_samples = (M_PI - lambda) / task.lb - 1;
 
+        if (energy_per_time(task.lb, lambda, 1) > min_energy) {
+            printf("stopping at %d periods, as min(dWtx/dt)=%.2f from now\n",
+                    i + 1, energy_per_time(task.lb, lambda, 1));
+            break;
+        }
+
         for (j = 1; j <= max_samples; j++) {
             task.ub = (M_PI - lambda) / (j + 1);
             task.pc.lambda = lambda;
             task.pc.samples = j;
+
+            if (energy_per_time(task.lb, lambda, j) > min_energy) {
+                states_completed += max_samples - j + 1;
+                printf("stopping samples at %d, as min(dW/dt)=%.2f from now\n",
+                        j, energy_per_time(task.lb, lambda, j));
+                break;
+            }
 
             pthread_sem_up(1, &sem_new_task);
             pthread_sem_down(1, &sem_task_buffered, &task_mutex);
@@ -303,7 +316,7 @@ double get_protocol_parameters(double latency, double probability,
             gettimeofday(&end, &tz);
             elapsed = time_delta(&start, &end);
             estimated = elapsed * total_states / states_completed;
-            printf("explored %6.2f%% remaining %lds\n", 
+            printf("exploring at %6.2f%% remaining %lds\n", 
                     states_completed * 100. / total_states,
                     (estimated - elapsed) / 1000);
         }
@@ -317,6 +330,7 @@ double get_protocol_parameters(double latency, double probability,
     pthread_sem_up(thread_num, &sem_new_task);
     pthread_mutex_unlock(&task_mutex);
 
+    printf("waiting for all workers\n");
     for (i = 0; i < thread_num; i++)
         pthread_join(threads[i], NULL);
     
