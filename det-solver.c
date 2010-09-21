@@ -22,13 +22,14 @@
 #include <gsl/gsl_math.h>
 #include <math.h>
 #include <assert.h>
+#include <string.h>
 
 #include "common-prints.h"
 #include "wildmac.h"
 
 
 static double tau_min, lambda, period;
-
+static double w_max, lifetime;
 
 static double energy_per_time(double tau, int s)
 {
@@ -41,7 +42,7 @@ static double energy_per_time(double tau, int s)
 }
 
 
-static double get_protocol_parameters(double *tau, int *s)
+static double latency_params(double *tau, int *s)
 {
     int smax, i;
     double w_min = DBL_MAX;
@@ -71,22 +72,30 @@ static double get_protocol_parameters(double *tau, int *s)
 }
 
 
-int main(int narg, char *varg[])
+static int check_args(int narg, char *varg[])
+{
+    if (narg == 3 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
+            varg[1][0] == 'e'))
+        return 0;
+
+    print_boilerplate();
+    printf("Invalid arguments. Please run the solver as follows:\n\n"
+            "\t%s (l PERIOD) | (e LIFETIME)\n\n"
+            "where:\n"
+            "\t l solves the latency problem "
+            "(PERIOD must be provided in ms).\n"
+            "\t e solves the energy problem "
+            "(LIFETIME must be provided in hours).\n\n",
+            varg[0]);
+    return 1;
+}
+
+
+static void solve_latency()
 {
     double tau = 0, w;
     int s = 0;
 
-    if (narg != 2) {
-        print_boilerplate();
-        printf("Invalid arguments. Please run the solver as follows:\n\n"
-                "\t%s PERIOD\n\n"
-                "where:\n"
-                "\tPERIOD must be provided in ms.\n\n",
-                varg[0]);
-        return -1;
-    }
-    sscanf(varg[1], "%lf", &period);
-    assert(period * 100 > (MINttx * 2 + trx) * 2);
     period *= 100; 
 
     lambda = get_lambda(period);
@@ -94,19 +103,99 @@ int main(int narg, char *varg[])
 
     print_boilerplate();
     
-    w = get_protocol_parameters(&tau, &s);
+    w = latency_params(&tau, &s);
     if (w == DBL_MAX) {
         printf("No suitable configuration found.\n");
-        return -1;
+        return;
     }
     period /= 100;
 
-    printf("energy per sec: %f\n", w);
-    printf("        period: %.2fms\n", period);
-    printf("        beacon: %.2fms\n", period * tau / 2 / M_PI + trx / 100.);
-    printf("    CCA period: %.2fms\n", period * tau / 2 / M_PI);
+    printf("For the desired latency of %.2f ms, "
+            "use the following configuration:\n", period);
+    printf("   avg current: %f (mA * 100)\n", w);
+    printf("        period: %.2f ms\n", period);
+    printf("        beacon: %.2f ms\n", period * tau / 2 / M_PI + trx / 100.);
+    printf("    CCA period: %.2f ms\n", period * tau / 2 / M_PI);
     printf("       samples: %d\n\n", s);
+} 
+
+
+static void solve_lifetime()
+{
+    double lb, ub, middle;
+    double last_latency;
+    unsigned long calls;
+    double tau;
+    int s;
+    double w;
+
+    w_max = BATTERY / lifetime;
+
+    lb = 4 * MINttx;
+    ub = MAXLATENCY;
+    middle = (ub - lb) / 2 + lb;
+ 
+    print_boilerplate();
     
+    last_latency = ub;
+    lambda = get_lambda(ub);
+    tau_min = 2 * M_PI * MINttx / ub;
+    w = latency_params(&tau, &s);
+
+    if (w > w_max) {
+        printf("No suitable configuration found.\n");
+        return;
+    }
+
+    for (calls = 0; calls < MAX_CALLS * 100; calls++) {
+        lambda = get_lambda(middle);
+        tau_min = 2 * M_PI * MINttx / middle;
+        w = latency_params(&tau, &s);
+
+        if (w <= w_max) {
+            double delta;
+
+            delta = fabs(middle - last_latency);
+            if (delta / last_latency < TOL_REL) {
+                break;
+            }
+            last_latency = ub = middle;
+        } else {
+            lb = middle;
+        }
+
+        middle = (ub - lb) / 2 + lb;
+    }
+    middle /= 100;
+
+    printf("For the desired lifetime of %.2f h, "
+            "use the following configuration:\n", lifetime);
+    printf("   avg current: %f (mA * 100)\n", w);
+    printf("        period: %f ms\n", middle);
+    printf("        beacon: %.2f ms\n", middle * tau / 2 / M_PI + trx / 100.);
+    printf("    CCA period: %.2f ms\n", middle * tau / 2 / M_PI);
+    printf("       samples: %d\n\n", s);
+}
+
+
+int main(int narg, char *varg[])
+{
+    if (check_args(narg, varg))
+        return -1;
+
+    switch(varg[1][0]) {
+        case 'l':
+            sscanf(varg[2], "%lf", &period);
+            assert(period * 100 > (MINttx * 2 + trx) * 2);
+            solve_latency();
+            break;
+        case 'e':
+            sscanf(varg[2], "%lf", &lifetime);
+            assert(lifetime >= 1.);
+            solve_lifetime();
+            break;
+    }
+   
     return 0;
 }
 

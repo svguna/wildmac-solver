@@ -38,12 +38,20 @@ typedef struct protocol_params protocol_params_t;
 #define trx 25
 #define MINttx 1000
 
+#define MAXLATENCY 360000000
+
+#define BATTERY 200000
+
 #define get_lambda(T) (trx * M_PI * 2 / T)
 #define SET_ACTIVE(p) (p)->active = 2 * M_PI - (p)->on;\
                       (p)->active2 = (p)->active * (p)->active
 #define SET_ON(p) (p)->on = ((p)->samples + 1) * (p)->tau + (p)->lambda
 
 #define HASH_SIZE 16
+
+#define MAX_EVAL 100
+#define MAX_CALLS 10
+#define TOL_REL 1e-2
 
 #endif
 
