@@ -127,10 +127,12 @@ static double probability_chain_an(int n, int k, protocol_params_t *p)
     gsl_monte_plain_free(s);
 
     gsl_rng_free(r);
+#ifdef CONTACT_VARIABLE
     if (n * 2 + 1 - k == 1)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
     if (n * 2 + 1 - k == 0)
         res *= (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
+#endif
 
     hash_res = malloc(sizeof(double));
     *hash_res = res;
@@ -231,11 +233,12 @@ static double probability_chain_bn(int n, int k, protocol_params_t *p)
     gsl_monte_plain_free(s);
 
     gsl_rng_free(r);
-   
+#ifdef CONTACT_VARIABLE
     if (2 * (n + 1) - k == 1)
         res *= (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
     if (2 * (n + 1) - k == 0)
         res *= (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
+#endif
 
     hash_res = malloc(sizeof(double));
     *hash_res = res;

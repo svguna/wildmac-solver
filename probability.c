@@ -87,7 +87,11 @@ double probability_an_bn(protocol_params_t *p)
 
 double probability_a0_b0(protocol_params_t *p)
 {
+#ifdef CONTACT_VARIABLE
     double result = (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
+#else
+    double result = 1.;
+#endif
     return result * probability_an_bn(p);
 }
 
@@ -147,7 +151,11 @@ double probability_an_bn1(protocol_params_t *p)
 
 double probability_a0_bm1(protocol_params_t *p)
 {
+#ifdef CONTACT_VARIABLE
     double result = (2 * M_PI + p->on - 2 * p->lambda) / 4 / M_PI;
+#else
+    double result = 1.;
+#endif
     return result * probability_an_bn1(p);
 }
 
@@ -207,8 +215,12 @@ double probability_bn_an(protocol_params_t *p)
 
 double probability_b0_a0(protocol_params_t *p)
 {
+#ifdef CONTACT_VARIABLE
     double result = (2 * M_PI + p->on - 2 * p->lambda - 
             (p->lambda + p->on) / (2 * M_PI - p->on)) / 4 / M_PI;
+#else
+    double result = 1.;
+#endif
     return result * probability_bn_an(p);
 }
 
@@ -268,7 +280,11 @@ double probability_bn1_an(protocol_params_t *p)
 
 double probability_bm1_a0(protocol_params_t *p)
 {
+#ifdef CONTACT_VARIABLE
     double result = (2 * M_PI - p->lambda) / (2 * M_PI - p->on) / 2 / M_PI;
+#else
+    double result = 1.;
+#endif
     return result * probability_bn1_an(p);
 }
 
