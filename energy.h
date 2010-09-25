@@ -25,10 +25,10 @@
 // Currents are given in tens of uA.
 // Time is given in tens of us.
 
-double get_protocol_parameters(double latency, double probability, 
-        double *period, protocol_params_t *params);
-
-
+double get_latency_params(double latency, double probability, double *period, 
+        protocol_params_t *params);
+double get_lifetime_params(double lifetime, double probability, double *period,
+        protocol_params_t *params);
 
 #endif
 

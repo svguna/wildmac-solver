@@ -21,6 +21,7 @@
 #include <gsl/gsl_math.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "common-prints.h"
 #include "probability.h"
@@ -29,52 +30,112 @@
 #include "energy.h"
 
 
-int main(int narg, char *varg[])
+static void solve_latency(double latency, double probability)
 {
     protocol_params_t params;
     double energy, period;
-    double latency, probability;
-
-    params.tau = M_PI / 10;
-    params.lambda = M_PI / 20;
-    params.samples = 6;
-    SET_ACTIVE(&params);
-    SET_ON(&params);
-
-    if (narg != 3) {
-        print_boilerplate();
-        printf("Invalid arguments. Please run the solver as follows:\n\n"
-                "\t%s LATENCY PROBABILITY\n\n"
-                "where:\n"
-                "\tLATENCY must be provided in ms, and\n"
-                "\tPROBABILITY is a float between 0 and 1.\n\n",
-                varg[0]);
-        return -1;
-    }
-    sscanf(varg[1], "%lf", &latency);
-    assert(latency * 100 > (MINttx * 2 + trx) * 2);
-    
-    sscanf(varg[2], "%lf", &probability);
-    assert(probability < 1);
-    assert(probability > 0);
     
     print_boilerplate();
 
-    energy = get_protocol_parameters(latency, probability, &period, &params);
+    energy = get_latency_params(latency, probability, &period, &params);
 
     if (energy == DBL_MAX) {
         printf("No suitable configuration found.\n");
-        return -1;
+        return;
     }
 
     period /= 100;
 
-    printf("energy per sec: %f\n", energy);
-    printf("        period: %.2fms\n", period);
-    printf("        beacon: %.2fms\n", period * params.tau / 2 / M_PI + 
+    printf("For the desired latency of %.2f ms, "
+            "use the following configuration:\n", period);
+    printf("   avg current: %f (mA * 100)\n", energy);
+    printf("        period: %.2f ms\n", period);
+    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI + 
             trx / 100.);
-    printf("    CCA period: %.2fms\n", period * params.tau / 2 / M_PI);
+    printf("    CCA period: %.2f ms\n", period * params.tau / 2 / M_PI);
     printf("       samples: %d\n\n", params.samples);
+}
+
+
+static void solve_lifetime(double lifetime, double probability)
+{
+    protocol_params_t params;
+    double latency, period;
+    
+    print_boilerplate();
+
+    latency = get_lifetime_params(lifetime, probability, &period, &params);
+
+    if (latency == DBL_MAX) {
+        printf("No suitable configuration found.\n");
+        return;
+    }
+
+    period /= 100;
+    latency /= 100;
+
+    printf("For the desired lifetime of %.2f h, "
+            "use the following configuration:\n", lifetime);
+    printf("       latency: %.2f ms\n", latency);
+    printf("        period: %.2f ms\n", period);
+    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI + 
+            trx / 100.);
+    printf("    CCA period: %.2f ms\n", period * params.tau / 2 / M_PI);
+    printf("       samples: %d\n\n", params.samples);
+
+}
+
+static int check_args(int narg, char *varg[])
+{
+    if (narg == 4 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
+            varg[1][0] == 'e'))
+        return 0;
+
+    print_boilerplate();
+    printf("Invalid arguments. Please run the solver as follows:\n\n"
+            "\t%s (l LATENCY) | (e LIFETIME) PROBABILITY\n\n"
+            "where:\n"
+            "\t `l' gives the best configuration to meet the latency "
+            "requirements\n"
+            "\t     (LATENCY must be provided in ms).\n"
+            "\t `e' gives the best configuration to meet the lifetime "
+            "requirements\n"
+            "\t     (LIFETIME must be provided in hours).\n\n",
+            varg[0]);
+    return 1;
+}
+
+
+
+int main(int narg, char *varg[])
+{
+    double latency, probability, lifetime;
+
+    if (check_args(narg, varg))
+        return -1;
+
+    switch(varg[1][0]) {
+        case 'l':
+            sscanf(varg[2], "%lf", &latency);
+            assert(latency * 100 > (MINttx * 2 + trx) * 2);
+
+            sscanf(varg[3], "%lf", &probability);
+            assert(probability < 1);
+            assert(probability > 0);
+            
+            solve_latency(latency, probability);
+            break;
+        case 'e':
+            sscanf(varg[2], "%lf", &lifetime);
+            assert(lifetime >= 1.);
+            
+            sscanf(varg[3], "%lf", &probability);
+            assert(probability < 1);
+            assert(probability > 0);
+
+            solve_lifetime(lifetime, probability);
+            break;
+    }
     
     return 0;
 }

@@ -31,6 +31,10 @@
 #include "wildmac.h"
 #include "pthread_sem.h"
 
+
+static int thread_cnt = 0;
+
+
 enum {
     NO_SOLUTION = -1,
     TRIVIAL,
@@ -54,13 +58,14 @@ struct worker_data {
     int *finish;
 
     /* result is outputed in the following */
-    double *min_energy;
+    double *energy;
+    int *slots;
     protocol_params_t *params;
     double *period;
 
     pthread_sem_t *sem_new_task;
     pthread_sem_t *sem_task_buffered;
-    pthread_sem_t *sem_cpu_available;
+    pthread_sem_t *sem_worker_available;
     pthread_mutex_t *task_mutex;
 };
 
@@ -145,12 +150,20 @@ static void *worker_thread(void *data)
     struct worker_data *wd = (struct worker_data *) data;
     struct worker_task task;
     double energy;
+    int thread_id;
+    
+    pthread_mutex_lock(wd->task_mutex);
+    thread_cnt++;
+    thread_id = thread_cnt;
+    pthread_mutex_unlock(wd->task_mutex);
 
-    pthread_sem_up(1, wd->sem_cpu_available);
+    pthread_sem_up(1, wd->sem_worker_available);
+    printf("[%d] online\n", thread_id);
+    
     while (!*wd->finish) {
         pthread_mutex_lock(wd->task_mutex);
         pthread_sem_down(1, wd->sem_new_task, wd->task_mutex); 
-        
+
         if (*wd->finish) {
             pthread_mutex_unlock(wd->task_mutex);
             break;
@@ -165,31 +178,37 @@ static void *worker_thread(void *data)
                 &task.pc, &energy);
 
         if (res == NO_SOLUTION) {
-            printf("finished %dx%.2fms samples=%d no solution\n", task.slot + 1,
-                    task.T / 100, task.pc.samples); 
-            pthread_sem_up(1, wd->sem_cpu_available);
+            printf("[%d] finished %dx%.2fms samples=%d no solution\n", 
+                    thread_id, task.slot + 1, task.T / 100, task.pc.samples); 
+            pthread_sem_up(1, wd->sem_worker_available);
             continue;
         }
         
-        printf("finished %dx%.2fms samples=%d tau=%.2fms dW/dt=%.2f\n", 
-                task.slot + 1, task.T / 100, task.pc.samples, 
-                task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
-        
+        printf("[%d] finished %dx%.2fms samples=%d tau=%.2fms I=%.2f "
+                "(mA * 100)\n", thread_id, task.slot + 1, task.T / 100, 
+                task.pc.samples, task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
         pthread_mutex_lock(wd->task_mutex);
 
-        if (energy > *wd->min_energy) {
-            pthread_sem_up(1, wd->sem_cpu_available);
-            pthread_mutex_unlock(wd->task_mutex);
-            continue;
+        if (energy < *wd->energy) {
+            if (wd->slots != NULL) {
+                if (*wd->period != DBL_MAX && 
+                        (task.slot + 1) * task.T > *wd->period * *wd->slots) {
+                    pthread_sem_up(1, wd->sem_worker_available);
+                    pthread_mutex_unlock(wd->task_mutex);
+                    continue;
+                }
+                *wd->slots = task.slot + 1;
+            } else
+                *wd->energy = energy;
+            
+            memcpy(wd->params, &task.pc, sizeof(protocol_params_t));
+            *wd->period = task.T;
         }
 
-        *wd->min_energy = energy;
-        memcpy(wd->params, &task.pc, sizeof(protocol_params_t));
-        *wd->period = task.T;
-        
-        pthread_sem_up(1, wd->sem_cpu_available);
+        pthread_sem_up(1, wd->sem_worker_available);
         pthread_mutex_unlock(wd->task_mutex);
     }
+    printf("[%d] offline\n", thread_id);
     return NULL;
 }
 
@@ -204,8 +223,8 @@ unsigned long time_delta(struct timeval *start, struct timeval *end)
 }
 
 
-double get_protocol_parameters(double latency, double probability,
-        double *period, protocol_params_t *params)
+double get_latency_params(double latency, double probability, double *period, 
+        protocol_params_t *params)
 {
     struct timeval start, end;
     struct timezone tz;
@@ -220,7 +239,7 @@ double get_protocol_parameters(double latency, double probability,
 
     int finish = 0;
     
-    pthread_sem_t sem_cpu_available;
+    pthread_sem_t sem_worker_available;
     pthread_sem_t sem_new_task;
     pthread_sem_t sem_task_buffered;
     pthread_mutex_t task_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -232,29 +251,26 @@ double get_protocol_parameters(double latency, double probability,
         
         .finish = &finish,
         
-        .min_energy = &min_energy,
+        .energy = &min_energy,
+        .slots = NULL,
         .params = params,
         .period = period,
 
         .sem_new_task = &sem_new_task,
         .sem_task_buffered = &sem_task_buffered,
-        .sem_cpu_available = &sem_cpu_available,
+        .sem_worker_available = &sem_worker_available,
         .task_mutex = &task_mutex,
     };
-
 
     assert(period != NULL);
     assert(params != NULL);
     
-
-    pthread_sem_init(0, &sem_cpu_available);
+    pthread_sem_init(0, &sem_worker_available);
     pthread_sem_init(0, &sem_new_task);
     pthread_sem_init(0, &sem_task_buffered);
 
-
     latency *= 100;
     max_slots = latency / 2 / (2 * MINttx + trx);
-
 
     printf("running on %d threads\n", thread_num);
     threads = malloc(thread_num * sizeof(pthread_t));
@@ -277,7 +293,7 @@ double get_protocol_parameters(double latency, double probability,
 
     gettimeofday(&start, &tz);
     pthread_mutex_lock(&task_mutex);
-    pthread_sem_down(1, &sem_cpu_available, &task_mutex);
+    pthread_sem_down(1, &sem_worker_available, &task_mutex);
     
     for (i = 0; i < max_slots; i++) {
         task.slot = i;
@@ -291,8 +307,8 @@ double get_protocol_parameters(double latency, double probability,
         max_samples = (M_PI - lambda) / task.lb - 1;
 
         if (energy_per_time(task.lb, lambda, 1) > min_energy) {
-            printf("stopping at %d periods, as min(dWtx/dt)=%.2f from now\n",
-                    i + 1, energy_per_time(task.lb, lambda, 1));
+            printf("stopping at %d periods, as min(Itx)=%.2f mA * 100 from "
+                    "now\n", i + 1, energy_per_time(task.lb, lambda, 1));
             break;
         }
 
@@ -303,14 +319,14 @@ double get_protocol_parameters(double latency, double probability,
 
             if (energy_per_time(task.lb, lambda, j) > min_energy) {
                 states_completed += max_samples - j + 1;
-                printf("stopping samples at %d, as min(dW/dt)=%.2f from now\n",
-                        j, energy_per_time(task.lb, lambda, j));
+                printf("stopping samples at %d, as min(I)=%.2f mA * 100 from "
+                        "now\n", j, energy_per_time(task.lb, lambda, j));
                 break;
             }
 
             pthread_sem_up(1, &sem_new_task);
             pthread_sem_down(1, &sem_task_buffered, &task_mutex);
-            pthread_sem_down(1, &sem_cpu_available, &task_mutex);
+            pthread_sem_down(1, &sem_worker_available, &task_mutex);
             
             states_completed++;
             gettimeofday(&end, &tz);
@@ -339,5 +355,161 @@ double get_protocol_parameters(double latency, double probability,
     
     free(threads);
     return min_energy;
+}
+
+
+static double try_latency(int thread_num, double latency, double max_energy, 
+        double probability, struct worker_data *wd)
+{
+    int i, j, max_slots, max_samples;
+    double lambda;
+    struct worker_task *task = wd->task;
+
+    printf("trying latency %.2f ms\n", latency / 100);
+    max_slots = latency / 2 / (2 * MINttx + trx);
+    
+    *wd->period = DBL_MAX;
+    *wd->slots = 0;
+
+    pthread_mutex_lock(wd->task_mutex);
+    pthread_sem_down(1, wd->sem_worker_available, wd->task_mutex);
+    
+    for (i = 0; i < max_slots; i++) {
+        task->slot = i;
+        task->T = latency / (i + 1);
+        lambda = get_lambda(task->T);
+        task->lb = 2 * lambda;
+
+        if (2 * M_PI * MINttx / task->T > task->lb)
+            task->lb = 2 * M_PI * MINttx / task->T;
+
+        max_samples = (M_PI - lambda) / task->lb - 1;
+
+        if (energy_per_time(task->lb, lambda, 1) > max_energy) {
+            printf("stopping at %d periods, as min(Itx)=%.2f mA * 100 "
+                    "from now\n", i + 1, energy_per_time(task->lb, lambda, 1));
+            break;
+        }
+
+        if (*wd->slots > 0) 
+            break;
+
+        for (j = 1; j <= max_samples; j++) {
+            task->ub = (M_PI - lambda) / (j + 1);
+            task->pc.lambda = lambda;
+            task->pc.samples = j;
+
+            if (energy_per_time(task->lb, lambda, j) > max_energy) {
+                printf("stopping samples at %d, as min(I)=%.2f from now\n", j, 
+                        energy_per_time(task->lb, lambda, j));
+                break;
+            }
+            if (*wd->slots > 0) 
+                break;
+
+            pthread_sem_up(1, wd->sem_new_task);
+            pthread_sem_down(1, wd->sem_task_buffered, wd->task_mutex);
+            pthread_sem_down(1, wd->sem_worker_available, wd->task_mutex);
+        }
+    }
+    pthread_sem_down(thread_num - 1, wd->sem_worker_available, wd->task_mutex);
+    pthread_sem_up(thread_num, wd->sem_worker_available);
+    pthread_mutex_unlock(wd->task_mutex);
+
+    return *wd->slots * *wd->period;
+}
+
+
+double get_lifetime_params(double lifetime, double probability, double *period,
+        protocol_params_t *params)
+{
+    double lb, ub, middle;
+    double last_latency, actual_latency;
+    unsigned long calls;
+    double max_energy = BATTERY / lifetime;
+    int thread_num = sysconf(_SC_NPROCESSORS_ONLN);
+
+    pthread_t *threads;
+    pthread_sem_t sem_worker_available;
+    pthread_sem_t sem_new_task;
+    pthread_sem_t sem_task_buffered;
+    pthread_mutex_t task_mutex = PTHREAD_MUTEX_INITIALIZER;
+    int finish = 0;
+    int slots = 0;
+    int i;
+
+    struct worker_task task;
+    struct worker_data worker_data = {
+        .probability = probability,
+        .task = &task,
+        
+        .finish = &finish,
+        
+        .energy = &max_energy,
+        .slots = &slots,
+        .params = params,
+        .period = period,
+
+        .sem_new_task = &sem_new_task,
+        .sem_task_buffered = &sem_task_buffered,
+        .sem_worker_available = &sem_worker_available,
+        .task_mutex = &task_mutex,
+    };
+
+    assert(period != NULL);
+    assert(params != NULL);
+
+    pthread_sem_init(0, &sem_worker_available);
+    pthread_sem_init(0, &sem_new_task);
+    pthread_sem_init(0, &sem_task_buffered);
+
+    threads = malloc(thread_num * sizeof(pthread_t));
+    for (i = 0; i < thread_num; i++)
+        pthread_create(threads + i, NULL, worker_thread, &worker_data);
+
+    lb = 4 * MINttx;
+    ub = MAXLATENCY;
+    middle = (ub - lb) / 2 + lb;
+ 
+    last_latency = ub;
+    actual_latency = try_latency(thread_num, last_latency, max_energy, 
+            probability, &worker_data);
+
+    if (actual_latency == 0) {
+        actual_latency = DBL_MAX;
+        goto lifetime_terminate;
+    }
+
+    for (calls = 0; calls < MAX_CALLS * 100; calls++) {
+        actual_latency = try_latency(thread_num, middle, max_energy, 
+                probability, &worker_data);
+
+        if (actual_latency != 0) {
+            double delta;
+
+            delta = fabs(middle - last_latency);
+            if (delta / last_latency < TOL_REL) {
+                break;
+            }
+            last_latency = ub = middle;
+        } else 
+            lb = middle;
+
+        middle = (ub - lb) / 2 + lb;
+    }
+
+lifetime_terminate:
+    finish = 1;
+    pthread_mutex_lock(&task_mutex);
+    pthread_sem_up(thread_num, &sem_new_task);
+    pthread_mutex_unlock(&task_mutex);
+
+    printf("waiting for all workers\n");
+    for (i = 0; i < thread_num; i++)
+        pthread_join(threads[i], NULL);
+    
+    free(threads);
+
+    return actual_latency;
 }
 

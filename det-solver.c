@@ -80,12 +80,14 @@ static int check_args(int narg, char *varg[])
 
     print_boilerplate();
     printf("Invalid arguments. Please run the solver as follows:\n\n"
-            "\t%s (l PERIOD) | (e LIFETIME)\n\n"
+            "\t%s (l LATENCY) | (e LIFETIME)\n\n"
             "where:\n"
-            "\t l solves the latency problem "
-            "(PERIOD must be provided in ms).\n"
-            "\t e solves the energy problem "
-            "(LIFETIME must be provided in hours).\n\n",
+            "\t `l' gives the best configuration to meet the latency "
+            "requirements\n"
+            "\t     (LATENCY must be provided in ms).\n"
+            "\t `e' gives the best configuration to meet the lifetime "
+            "requirements\n"
+            "\t     (LIFETIME must be provided in hours).\n\n",
             varg[0]);
     return 1;
 }
@@ -170,11 +172,10 @@ static void solve_lifetime()
 
     printf("For the desired lifetime of %.2f h, "
             "use the following configuration:\n", lifetime);
-    printf("   avg current: %f (mA * 100)\n", w);
-    printf("        period: %f ms\n", middle);
-    printf("        beacon: %.2f ms\n", middle * tau / 2 / M_PI + trx / 100.);
-    printf("    CCA period: %.2f ms\n", middle * tau / 2 / M_PI);
-    printf("       samples: %d\n\n", s);
+    printf("latency & period: %f ms\n", middle);
+    printf("          beacon: %.2f ms\n", middle * tau / 2 / M_PI + trx / 100.);
+    printf("      CCA period: %.2f ms\n", middle * tau / 2 / M_PI);
+    printf("         samples: %d\n\n", s);
 }
 
 
