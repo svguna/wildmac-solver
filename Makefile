@@ -1,7 +1,7 @@
 UNAME := $(shell uname)
 CFLAGS = -Wall
 
-PROB_SOURCES=chain.c hashtable.c probability_chain.c energy.c pthread_sem.c hashkeys.c probability.c prob-solver.c common-prints.c integrands.c
+PROB_SOURCES=chain.c hashtable.c probability_chain.c solver.c pthread_sem.c hashkeys.c probability.c prob-solver.c common-prints.c integrands.c
 PROB_OBJECTS=$(PROB_SOURCES:.c=.o)
 
 DET_SOURCES=det-solver.c common-prints.c

@@ -17,8 +17,8 @@
  * along with this program. If not, see 
  * http://www.gnu.org/licenses/gpl-3.0-standalone.html.
  */
-#ifndef __ENERGY_H
-#define __ENERGY_H
+#ifndef __SOLVER_H
+#define __SOLVER_H
 
 #include "wildmac.h"
 

@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "energy.h"
+#include "solver.h"
 #include "chain.h"
 #include "wildmac.h"
 #include "pthread_sem.h"

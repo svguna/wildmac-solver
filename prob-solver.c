@@ -27,7 +27,7 @@
 #include "probability.h"
 #include "probability_chain.h"
 #include "chain.h"
-#include "energy.h"
+#include "solver.h"
 
 
 static void solve_latency(double latency, double probability)
