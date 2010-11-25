@@ -1,7 +1,7 @@
 /*
  * wildmac-solver - returns the proper configuration of the wildmac protocol,
  * given a desired detection latency and probability.
- * Copyright (C) 2010  Stefan Guna
+ * Copyright (C) 2010  Stefan Guna, http://disi.unitn.it/~guna
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
