@@ -46,13 +46,11 @@ static void solve_latency(double latency, double probability)
 
     period /= 100;
 
-    printf("For the desired latency of %.2f ms, "
-            "use the following configuration:\n", period);
-    printf("   avg current: %f (mA * 100)\n", energy);
+    printf("For the desired latency of %.2f ms, use the following "
+            "configuration:\n", period);
+    printf("   avg current: %.2f mA\n", energy / 100);
     printf("        period: %.2f ms\n", period);
-    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI + 
-            trx / 100.);
-    printf("    CCA period: %.2f ms\n", period * params.tau / 2 / M_PI);
+    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
     printf("       samples: %d\n\n", params.samples);
 }
 
@@ -74,13 +72,13 @@ static void solve_lifetime(double lifetime, double probability)
     period /= 100;
     latency /= 100;
 
-    printf("For the desired lifetime of %.2f h, "
-            "use the following configuration:\n", lifetime);
+    printf("For the desired lifetime of %.2f h, use the following "
+            "configuration:\n", lifetime);
+    printf("   avg current: %.2f mA\n", 
+            energy(period, params.tau, params.samples) / 100);
     printf("       latency: %.2f ms\n", latency);
     printf("        period: %.2f ms\n", period);
-    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI + 
-            trx / 100.);
-    printf("    CCA period: %.2f ms\n", period * params.tau / 2 / M_PI);
+    printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
     printf("       samples: %d\n\n", params.samples);
 
 }

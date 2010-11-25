@@ -70,15 +70,22 @@ struct worker_data {
 };
 
 
-static inline double energy_per_time(double tau, double lambda, int samples)
+static inline double energy_per_time(double period, double tau, int samples)
 {
-    double res = 0;
+    double w = 0;
+    double beacon = tau * period / 2 / M_PI;
+    
+    w += Isample * Tsample * samples;
+    w += Iup * Tup + Idown * Tdown;
+    w += Itx * beacon;
+    w += Ioff * (period - samples * Tsample - Tdown - Tup - beacon);
+    return w / period;
+}
 
-    res += (tau + lambda) * Itx;
-    res += lambda * samples * Irx;
-    res += (2 * M_PI - tau - (samples + 1) * lambda) * Ioff;
 
-    return res / 2 / M_PI;
+double energy(double period, double tau, int samples)
+{
+    return energy_per_time(period, tau, samples);
 }
 
 
@@ -100,7 +107,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
 
     if (contact_union(slot, params) < prob_bound)
         return NO_SOLUTION;
-    last_energy = energy_per_time(params->tau, params->lambda, params->samples);
+    last_energy = energy_per_time(T, params->tau, params->samples);
 
     params->tau = lb; 
     SET_ON(params);
@@ -123,8 +130,7 @@ static int find_optimal(double prob_bound, double lb, double ub, double T,
         if (prob >= prob_bound) { 
             double delta;
             
-            new_energy = energy_per_time(params->tau, params->lambda, 
-                    params->samples);
+            new_energy = energy_per_time(T, params->tau, params->samples);
             delta = fabs(new_energy - last_energy);
             if (delta / last_energy < TOL_REL) {
                 *energy = new_energy;
@@ -184,9 +190,9 @@ static void *worker_thread(void *data)
             continue;
         }
         
-        printf("[%d] finished %dx%.2fms samples=%d tau=%.2fms I=%.2f "
-                "(mA * 100)\n", thread_id, task.slot + 1, task.T / 100, 
-                task.pc.samples, task.pc.tau * task.T / 100 / 2 / M_PI, energy); 
+        printf("[%d] finished %dx%.2fms samples=%d tau=%.2fms I=%.2f mA\n", 
+                thread_id, task.slot + 1, task.T / 100, task.pc.samples,
+                task.pc.tau * task.T / 100 / 2 / M_PI, energy / 100); 
         pthread_mutex_lock(wd->task_mutex);
 
         if (energy < *wd->energy) {
@@ -306,9 +312,9 @@ double get_latency_params(double latency, double probability, double *period,
 
         max_samples = (M_PI - lambda) / task.lb - 1;
 
-        if (energy_per_time(task.lb, lambda, 1) > min_energy) {
-            printf("stopping at %d periods, as min(Itx)=%.2f mA * 100 from "
-                    "now\n", i + 1, energy_per_time(task.lb, lambda, 1));
+        if (energy_per_time(task.T, task.lb, 1) > min_energy) {
+            printf("stopping at %d periods, as min(I)=%.2f mA from now\n", 
+                    i + 1, energy_per_time(task.T, task.lb, 1) / 100);
             break;
         }
 
@@ -317,10 +323,10 @@ double get_latency_params(double latency, double probability, double *period,
             task.pc.lambda = lambda;
             task.pc.samples = j;
 
-            if (energy_per_time(task.lb, lambda, j) > min_energy) {
+            if (energy_per_time(task.T, task.lb, j) > min_energy) {
                 states_completed += max_samples - j + 1;
-                printf("stopping samples at %d, as min(I)=%.2f mA * 100 from "
-                        "now\n", j, energy_per_time(task.lb, lambda, j));
+                printf("stopping samples at %d, as min(I)=%.2f mA from now\n",
+                        j, energy_per_time(task.T, task.lb, j) / 100);
                 break;
             }
 
@@ -385,9 +391,9 @@ static double try_latency(int thread_num, double latency, double max_energy,
 
         max_samples = (M_PI - lambda) / task->lb - 1;
 
-        if (energy_per_time(task->lb, lambda, 1) > max_energy) {
-            printf("stopping at %d periods, as min(Itx)=%.2f mA * 100 "
-                    "from now\n", i + 1, energy_per_time(task->lb, lambda, 1));
+        if (energy_per_time(task->T, task->lb, 1) > max_energy) {
+            printf("stopping at %d periods, as min(I)=%.2f mA from now\n",
+                    i + 1, energy_per_time(task->T, task->lb, 1) / 100);
             break;
         }
 
@@ -399,9 +405,9 @@ static double try_latency(int thread_num, double latency, double max_energy,
             task->pc.lambda = lambda;
             task->pc.samples = j;
 
-            if (energy_per_time(task->lb, lambda, j) > max_energy) {
+            if (energy_per_time(task->T, task->lb, j) > max_energy) {
                 printf("stopping samples at %d, as min(I)=%.2f from now\n", j, 
-                        energy_per_time(task->lb, lambda, j));
+                        energy_per_time(task->T, task->lb, j));
                 break;
             }
             if (*wd->slots > 0) 

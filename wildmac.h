@@ -32,11 +32,20 @@ struct protocol_params {
 typedef struct protocol_params protocol_params_t;
 
 // time values expressed in tens of us
-#define Itx 1740
-#define Irx 1970
-#define Ioff 2
-#define trx 25
-#define MINttx 1000
+#define Itx 1652
+
+#define Iup 908
+#define Tup 445
+
+#define Idown 950
+#define Tdown 110
+
+#define Isample 977
+#define Tsample 406
+
+#define Ioff 9
+#define trx 400
+#define MINttx 2000
 
 #define MAXLATENCY 360000000
 

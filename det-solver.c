@@ -34,11 +34,13 @@ static double w_max, lifetime;
 static double energy_per_time(double tau, int s)
 {
     double w = 0;
+    double beacon = tau * period / 2 / M_PI;
     
-    w += Itx * (tau + lambda);
-    w += (s + 1) * Irx * lambda;
-    w += Ioff * (2 * M_PI - tau - 2 * lambda - s * lambda);
-    return w / 2 / M_PI;
+    w += Isample * Tsample * s;
+    w += Iup * Tup + Idown * Tdown;
+    w += Itx * beacon;
+    w += Ioff * (period - s * Tsample - Tdown - Tup - beacon);
+    return w / period;
 }
 
 
@@ -114,10 +116,9 @@ static void solve_latency()
 
     printf("For the desired latency of %.2f ms, "
             "use the following configuration:\n", period);
-    printf("   avg current: %f (mA * 100)\n", w);
+    printf("   avg current: %f mA\n", w / 100);
     printf("        period: %.2f ms\n", period);
-    printf("        beacon: %.2f ms\n", period * tau / 2 / M_PI + trx / 100.);
-    printf("    CCA period: %.2f ms\n", period * tau / 2 / M_PI);
+    printf("        beacon: %.2f ms\n", period * tau / 2 / M_PI);
     printf("       samples: %d\n\n", s);
 } 
 
@@ -139,7 +140,7 @@ static void solve_lifetime()
  
     print_boilerplate();
     
-    last_latency = ub;
+    period = last_latency = ub;
     lambda = get_lambda(ub);
     tau_min = 2 * M_PI * MINttx / ub;
     w = latency_params(&tau, &s);
@@ -151,6 +152,7 @@ static void solve_lifetime()
 
     for (calls = 0; calls < MAX_CALLS * 100; calls++) {
         lambda = get_lambda(middle);
+        period = middle;
         tau_min = 2 * M_PI * MINttx / middle;
         w = latency_params(&tau, &s);
 
@@ -172,9 +174,9 @@ static void solve_lifetime()
 
     printf("For the desired lifetime of %.2f h, "
             "use the following configuration:\n", lifetime);
-    printf("latency & period: %f ms\n", middle);
-    printf("          beacon: %.2f ms\n", middle * tau / 2 / M_PI + trx / 100.);
-    printf("      CCA period: %.2f ms\n", middle * tau / 2 / M_PI);
+    printf("latency & period: %.2f ms\n", middle);
+    printf("     avg current: %f mA\n", w / 100);
+    printf("          beacon: %.2f ms\n", middle * tau / 2 / M_PI);
     printf("         samples: %d\n\n", s);
 }
 
