@@ -30,6 +30,8 @@
 
 static double tau_min, lambda, period;
 static double w_max, lifetime;
+int battery;
+int min_ttx;
 
 static double energy_per_time(double tau, int s)
 {
@@ -76,20 +78,22 @@ static double latency_params(double *tau, int *s)
 
 static int check_args(int narg, char *varg[])
 {
-    if (narg == 3 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
+    if (narg == 5 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
             varg[1][0] == 'e'))
         return 0;
 
     print_boilerplate();
     printf("Invalid arguments. Please run the solver as follows:\n\n"
-            "\t%s (l LATENCY) | (e LIFETIME)\n\n"
+            "\t%s (l LATENCY) | (e LIFETIME) BATTERY MIN_TTX\n\n"
             "where:\n"
             "\t `l' gives the best configuration to meet the latency "
             "requirements\n"
-            "\t     (LATENCY must be provided in ms).\n"
+            "\t     (LATENCY must be provided in ms)\n"
             "\t `e' gives the best configuration to meet the lifetime "
             "requirements\n"
-            "\t     (LIFETIME must be provided in hours).\n\n",
+            "\t     (LIFETIME must be provided in hours)\n"
+            "\t BATTERY capacity is expressed in mAh\n"
+            "\t MIN_TTX minimum beacon duration (in us).\n\n",
             varg[0]);
     return 1;
 }
@@ -103,7 +107,7 @@ static void solve_latency()
     period *= 100; 
 
     lambda = get_lambda(period);
-    tau_min = 2 * M_PI * MINttx / period; 
+    tau_min = 2 * M_PI * min_ttx / period; 
 
     print_boilerplate();
     
@@ -114,8 +118,10 @@ static void solve_latency()
     }
     period /= 100;
 
-    printf("For the desired latency of %.2f ms, "
-            "use the following configuration:\n", period);
+    printf("For the desired latency of %.2f ms, battery capacity of %d mAh, "
+            "and minimum beacon duration of %d us, use the following "
+            "configuration:\n", period, battery / 100, min_ttx / 100);
+    printf("      lifetime: %.2f h\n", battery / w);
     printf("   avg current: %f mA\n", w / 100);
     printf("        period: %.2f ms\n", period);
     printf("        beacon: %.2f ms\n", period * tau / 2 / M_PI);
@@ -132,9 +138,9 @@ static void solve_lifetime()
     int s;
     double w;
 
-    w_max = BATTERY / lifetime;
+    w_max = battery / lifetime;
 
-    lb = 4 * MINttx;
+    lb = 4 * min_ttx;
     ub = MAXLATENCY;
     middle = (ub - lb) / 2 + lb;
  
@@ -142,7 +148,7 @@ static void solve_lifetime()
     
     period = last_latency = ub;
     lambda = get_lambda(ub);
-    tau_min = 2 * M_PI * MINttx / ub;
+    tau_min = 2 * M_PI * min_ttx / ub;
     w = latency_params(&tau, &s);
 
     if (w > w_max) {
@@ -153,7 +159,7 @@ static void solve_lifetime()
     for (calls = 0; calls < MAX_CALLS * 100; calls++) {
         lambda = get_lambda(middle);
         period = middle;
-        tau_min = 2 * M_PI * MINttx / middle;
+        tau_min = 2 * M_PI * min_ttx / middle;
         w = latency_params(&tau, &s);
 
         if (w <= w_max) {
@@ -172,8 +178,10 @@ static void solve_lifetime()
     }
     middle /= 100;
 
-    printf("For the desired lifetime of %.2f h, "
-            "use the following configuration:\n", lifetime);
+    printf("For the desired lifetime of %.2f h, battery capacity of %d mAh, "
+            "and minimum beacon duration of %d us, use the following "
+            "configuration:\n", lifetime, battery / 100, min_ttx / 100);
+    printf("        lifetime: %.2f h\n", battery / w);
     printf("latency & period: %.2f ms\n", middle);
     printf("     avg current: %f mA\n", w / 100);
     printf("          beacon: %.2f ms\n", middle * tau / 2 / M_PI);
@@ -186,10 +194,19 @@ int main(int narg, char *varg[])
     if (check_args(narg, varg))
         return -1;
 
+    sscanf(varg[3], "%d", &battery);
+    assert(battery > 10);
+    assert(battery < 10000);
+    battery *= 100;
+
+    sscanf(varg[4], "%d", &min_ttx);
+    assert(min_ttx >= 20);
+    min_ttx *= 100;
+
     switch(varg[1][0]) {
         case 'l':
             sscanf(varg[2], "%lf", &period);
-            assert(period * 100 > (MINttx * 2 + trx) * 2);
+            assert(period * 100 > (min_ttx * 2 + trx) * 2);
             solve_latency();
             break;
         case 'e':

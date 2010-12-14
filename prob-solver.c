@@ -29,6 +29,8 @@
 #include "chain.h"
 #include "solver.h"
 
+int battery;
+int min_ttx;
 
 static void solve_latency(double latency, double probability)
 {
@@ -46,8 +48,11 @@ static void solve_latency(double latency, double probability)
 
     period /= 100;
 
-    printf("For the desired latency of %.2f ms, use the following "
-            "configuration:\n", period);
+    printf("For the desired latency of %.2f ms, battery capacity of %d mAh, "
+            "minimum beacon duration of %d us, and minimum probability %.2f "
+            "use the following configuration:\n", period, battery / 100, 
+            min_ttx / 100, probability);
+    printf("      lifetime: %.2f h\n", battery / energy);
     printf("   avg current: %.2f mA\n", energy / 100);
     printf("        period: %.2f ms\n", period);
     printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
@@ -69,13 +74,19 @@ static void solve_lifetime(double lifetime, double probability)
         return;
     }
 
-    period /= 100;
     latency /= 100;
 
-    printf("For the desired lifetime of %.2f h, use the following "
-            "configuration:\n", lifetime);
+    printf("For the desired lifetime of %.2f h, battery capacity of %d mAh, "
+            "minimum beacon duration of %d us, and minimum probability %.2f, "
+            "use the following configuration:\n", lifetime, battery / 100,
+            min_ttx / 100, probability);
+    printf("      lifetime: %.2f h\n", 
+            battery / energy(period, params.tau, params.samples));
     printf("   avg current: %.2f mA\n", 
             energy(period, params.tau, params.samples) / 100);
+    
+    period /= 100;
+    
     printf("       latency: %.2f ms\n", latency);
     printf("        period: %.2f ms\n", period);
     printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
@@ -85,20 +96,22 @@ static void solve_lifetime(double lifetime, double probability)
 
 static int check_args(int narg, char *varg[])
 {
-    if (narg == 4 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
+    if (narg == 6 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
             varg[1][0] == 'e'))
         return 0;
 
     print_boilerplate();
     printf("Invalid arguments. Please run the solver as follows:\n\n"
-            "\t%s (l LATENCY) | (e LIFETIME) PROBABILITY\n\n"
+            "\t%s (l LATENCY) | (e LIFETIME) PROBABILITY BATTERY MIN_TTX\n\n"
             "where:\n"
             "\t `l' gives the best configuration to meet the latency "
             "requirements\n"
-            "\t     (LATENCY must be provided in ms).\n"
+            "\t     (LATENCY must be provided in ms)\n"
             "\t `e' gives the best configuration to meet the lifetime "
             "requirements\n"
-            "\t     (LIFETIME must be provided in hours).\n\n",
+            "\t     (LIFETIME must be provided in hours)\n"
+            "\t BATTERY capacity is expressed in mAh.\n"
+            "\t MIN_TTX minimum beacon duration (in us).\n\n",
             varg[0]);
     return 1;
 }
@@ -112,25 +125,30 @@ int main(int narg, char *varg[])
     if (check_args(narg, varg))
         return -1;
 
+    sscanf(varg[3], "%lf", &probability);
+    assert(probability < 1);
+    assert(probability > 0);
+
+    sscanf(varg[4], "%d", &battery);
+    assert(battery > 10);
+    assert(battery < 10000);
+    battery *= 100;
+    
+    sscanf(varg[5], "%d", &min_ttx);
+    assert(min_ttx >= 20);
+    min_ttx *= 100;
+
     switch(varg[1][0]) {
         case 'l':
             sscanf(varg[2], "%lf", &latency);
-            assert(latency * 100 > (MINttx * 2 + trx) * 2);
+            assert(latency * 100 > (min_ttx * 2 + trx) * 2);
 
-            sscanf(varg[3], "%lf", &probability);
-            assert(probability < 1);
-            assert(probability > 0);
-            
             solve_latency(latency, probability);
             break;
         case 'e':
             sscanf(varg[2], "%lf", &lifetime);
             assert(lifetime >= 1.);
             
-            sscanf(varg[3], "%lf", &probability);
-            assert(probability < 1);
-            assert(probability > 0);
-
             solve_lifetime(lifetime, probability);
             break;
     }

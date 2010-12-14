@@ -276,7 +276,7 @@ double get_latency_params(double latency, double probability, double *period,
     pthread_sem_init(0, &sem_task_buffered);
 
     latency *= 100;
-    max_slots = latency / 2 / (2 * MINttx + trx);
+    max_slots = latency / 2 / (2 * min_ttx + trx);
 
     printf("running on %d threads\n", thread_num);
     threads = malloc(thread_num * sizeof(pthread_t));
@@ -290,8 +290,8 @@ double get_latency_params(double latency, double probability, double *period,
         lambda = get_lambda(task.T);
         task.lb = 2 * lambda;
 
-        if (2 * M_PI * MINttx / task.T > task.lb)
-            task.lb = 2 * M_PI * MINttx / task.T;
+        if (2 * M_PI * min_ttx / task.T > task.lb)
+            task.lb = 2 * M_PI * min_ttx / task.T;
 
         total_states += (M_PI - lambda) / task.lb - 1;
     }
@@ -307,8 +307,8 @@ double get_latency_params(double latency, double probability, double *period,
         lambda = get_lambda(task.T);
         task.lb = 2 * lambda;
 
-        if (2 * M_PI * MINttx / task.T > task.lb)
-            task.lb = 2 * M_PI * MINttx / task.T;
+        if (2 * M_PI * min_ttx / task.T > task.lb)
+            task.lb = 2 * M_PI * min_ttx / task.T;
 
         max_samples = (M_PI - lambda) / task.lb - 1;
 
@@ -372,7 +372,7 @@ static double try_latency(int thread_num, double latency, double max_energy,
     struct worker_task *task = wd->task;
 
     printf("trying latency %.2f ms\n", latency / 100);
-    max_slots = latency / 2 / (2 * MINttx + trx);
+    max_slots = latency / 2 / (2 * min_ttx + trx);
     
     *wd->period = DBL_MAX;
     *wd->slots = 0;
@@ -386,8 +386,8 @@ static double try_latency(int thread_num, double latency, double max_energy,
         lambda = get_lambda(task->T);
         task->lb = 2 * lambda;
 
-        if (2 * M_PI * MINttx / task->T > task->lb)
-            task->lb = 2 * M_PI * MINttx / task->T;
+        if (2 * M_PI * min_ttx / task->T > task->lb)
+            task->lb = 2 * M_PI * min_ttx / task->T;
 
         max_samples = (M_PI - lambda) / task->lb - 1;
 
@@ -406,8 +406,8 @@ static double try_latency(int thread_num, double latency, double max_energy,
             task->pc.samples = j;
 
             if (energy_per_time(task->T, task->lb, j) > max_energy) {
-                printf("stopping samples at %d, as min(I)=%.2f from now\n", j, 
-                        energy_per_time(task->T, task->lb, j));
+                printf("stopping samples at %d, as min(I)=%.2f mA from now\n", 
+                        j, energy_per_time(task->T, task->lb, j) / 100);
                 break;
             }
             if (*wd->slots > 0) 
@@ -432,7 +432,7 @@ double get_lifetime_params(double lifetime, double probability, double *period,
     double lb, ub, middle;
     double last_latency, actual_latency;
     unsigned long calls;
-    double max_energy = BATTERY / lifetime;
+    double max_energy = battery / lifetime;
     int thread_num = sysconf(_SC_NPROCESSORS_ONLN);
 
     pthread_t *threads;
@@ -473,7 +473,7 @@ double get_lifetime_params(double lifetime, double probability, double *period,
     for (i = 0; i < thread_num; i++)
         pthread_create(threads + i, NULL, worker_thread, &worker_data);
 
-    lb = 4 * MINttx;
+    lb = 4 * min_ttx;
     ub = MAXLATENCY;
     middle = (ub - lb) / 2 + lb;
  

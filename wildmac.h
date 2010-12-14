@@ -45,11 +45,11 @@ typedef struct protocol_params protocol_params_t;
 
 #define Ioff 9
 #define trx 400
-#define MINttx 2000
 
 #define MAXLATENCY 360000000
 
-#define BATTERY 200000
+extern int battery;
+extern int min_ttx;
 
 #define get_lambda(T) (trx * M_PI * 2 / T)
 #define SET_ACTIVE(p) (p)->active = 2 * M_PI - (p)->on;\
