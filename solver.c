@@ -79,6 +79,8 @@ static inline double energy_per_time(double period, double tau, int samples)
     w += Iup * Tup + Idown * Tdown;
     w += Itx * beacon;
     w += Ioff * (period - samples * Tsample - Tdown - Tup - beacon);
+    if (w < 0)
+        return DBL_MAX;
     return w / period;
 }
 

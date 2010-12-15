@@ -42,6 +42,8 @@ static double energy_per_time(double tau, int s)
     w += Iup * Tup + Idown * Tdown;
     w += Itx * beacon;
     w += Ioff * (period - s * Tsample - Tdown - Tup - beacon);
+    if (w < 0)
+        return DBL_MAX;
     return w / period;
 }
 
@@ -62,11 +64,9 @@ static double latency_params(double *tau, int *s)
         if (t < tau_min)
             t = tau_min;
 
-        if ((i + 1) * t + lambda > 2 * M_PI - lambda)
-            continue;
         w = energy_per_time(t, i);
 
-        if (w > w_min)
+        if (w == DBL_MAX || w > w_min)
             continue;
         w_min = w;
         *tau = t;
