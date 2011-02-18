@@ -49,7 +49,7 @@ static void solve_latency(double latency, double probability)
     period /= 100;
 
     printf("For the desired latency of %.2f ms, battery capacity of %d mAh, "
-            "minimum beacon duration of %d us, and minimum probability %.2f "
+            "minimum beacon duration of %d ms, and minimum probability %.2f "
             "use the following configuration:\n", period, battery / 100, 
             min_ttx / 100, probability);
     printf("      lifetime: %.2f h\n", battery / energy);
@@ -77,7 +77,7 @@ static void solve_lifetime(double lifetime, double probability)
     latency /= 100;
 
     printf("For the desired lifetime of %.2f h, battery capacity of %d mAh, "
-            "minimum beacon duration of %d us, and minimum probability %.2f, "
+            "minimum beacon duration of %d ms, and minimum probability %.2f, "
             "use the following configuration:\n", lifetime, battery / 100,
             min_ttx / 100, probability);
     printf("      lifetime: %.2f h\n", 
@@ -111,7 +111,7 @@ static int check_args(int narg, char *varg[])
             "requirements\n"
             "\t     (LIFETIME must be provided in hours)\n"
             "\t BATTERY capacity is expressed in mAh.\n"
-            "\t MIN_TTX minimum beacon duration (in us).\n\n",
+            "\t MIN_TTX minimum beacon duration (in ms).\n\n",
             varg[0]);
     return 1;
 }
