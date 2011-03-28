@@ -31,21 +31,34 @@ struct protocol_params {
 };
 typedef struct protocol_params protocol_params_t;
 
-// time values expressed in tens of us
+// curent values expressed in one tenth of a mA, i.e., 1569 = 15.69 mA
+// time values expressed in one tenth of a ms, i.e., 1478 = 14.78 mS
+
+// current consumed while transmitting
 #define Itx 1652
 
+// average current consumed while ramping up
 #define Iup 908
+// duration of ramp up
 #define Tup 445
 
+// average current consumed while ramping down
 #define Idown 950
+// duration of ramp down
 #define Tdown 110
 
-#define Isample 977
-#define Tsample 406
+// average current consumed while sampling the channel
+#define Isample 1569
+// duration of sample
+#define Tsample 1478
 
+// current consumed when the radio if off
 #define Ioff 9
+
+// minimum overlap between beacon and reception to register a contact 
 #define trx 400
 
+// maximum latency for a lifetime problem
 #define MAXLATENCY 360000000
 
 extern int battery;
@@ -56,10 +69,9 @@ extern int min_ttx;
                       (p)->active2 = (p)->active * (p)->active
 #define SET_ON(p) (p)->on = ((p)->samples + 1) * (p)->tau + (p)->lambda
 
-#define HASH_SIZE 16
-
-#define MAX_EVAL 100
+// maximum number of calls to energy function
 #define MAX_CALLS 10
+// accuracy of the computation
 #define TOL_REL 1e-2
 
 #endif
