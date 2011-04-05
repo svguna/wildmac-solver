@@ -56,7 +56,8 @@ typedef struct protocol_params protocol_params_t;
 #define Ioff 9
 
 // minimum overlap between beacon and reception to register a contact 
-#define trx 400
+// required for 4 11B packets and 3 .48ms gaps
+#define trx 285
 
 // maximum latency for a lifetime problem
 #define MAXLATENCY 360000000
