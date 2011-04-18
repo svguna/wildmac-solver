@@ -38,10 +38,10 @@ static double energy_per_time(double tau, int s)
     double w = 0;
     double beacon = tau * period / 2 / M_PI;
     
-    w += Isample * Tsample * s;
-    w += Iup * Tup + Idown * Tdown;
-    w += Itx * beacon;
-    w += Ioff * (period - s * Tsample - Tdown - Tup - beacon);
+    w += (double) Isample * Tsample * s;
+    w += (double) Iup * Tup + Idown * Tdown;
+    w += (double) Itx * beacon;
+    w += (double) Ioff * (period - s * Tsample - Tdown - Tup - beacon);
     if (w < 0)
         return DBL_MAX;
     return w / period;

@@ -75,10 +75,10 @@ static inline double energy_per_time(double period, double tau, int samples)
     double w = 0;
     double beacon = tau * period / 2 / M_PI;
     
-    w += Isample * Tsample * samples;
-    w += Iup * Tup + Idown * Tdown;
-    w += Itx * beacon;
-    w += Ioff * (period - samples * Tsample - Tdown - Tup - beacon);
+    w += (double) Isample * Tsample * samples;
+    w += (double) Iup * Tup + Idown * Tdown;
+    w += (double) Itx * beacon;
+    w += (double) Ioff * (period - samples * Tsample - Tdown - Tup - beacon);
     if (w < 0)
         return DBL_MAX;
     return w / period;
