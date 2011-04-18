@@ -36,7 +36,8 @@ static void solve_latency(double latency, double probability)
 {
     protocol_params_t params;
     double energy, period;
-    
+    float achieved_probability;
+
     print_boilerplate();
 
     energy = get_latency_params(latency, probability, &period, &params);
@@ -47,16 +48,18 @@ static void solve_latency(double latency, double probability)
     }
 
     period /= 100;
+    achieved_probability = contact_union((latency / period) - 1, &params); 
 
     printf("For the desired latency of %.2f ms, battery capacity of %d mAh, "
             "minimum beacon duration of %d ms, and minimum probability %.2f "
-            "use the following configuration:\n", period, battery / 100, 
+            "use the following configuration:\n", latency, battery / 100, 
             min_ttx / 100, probability);
     printf("      lifetime: %.2f h\n", battery / energy);
     printf("   avg current: %.2f mA\n", energy / 100);
     printf("        period: %.2f ms\n", period);
     printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
-    printf("       samples: %d\n\n", params.samples);
+    printf("       samples: %d\n", params.samples);
+    printf("   probability: %.2f\n\n", achieved_probability);
 }
 
 
@@ -64,7 +67,8 @@ static void solve_lifetime(double lifetime, double probability)
 {
     protocol_params_t params;
     double latency, period;
-    
+    float achieved_probability;
+
     print_boilerplate();
 
     latency = get_lifetime_params(lifetime, probability, &period, &params);
@@ -86,13 +90,16 @@ static void solve_lifetime(double lifetime, double probability)
             energy(period, params.tau, params.samples) / 100);
     
     period /= 100;
+    achieved_probability = contact_union((latency / period) - 1, &params); 
+
     
     printf("       latency: %.2f ms\n", latency);
     printf("        period: %.2f ms\n", period);
     printf("        beacon: %.2f ms\n", period * params.tau / 2 / M_PI);
     printf("       samples: %d\n\n", params.samples);
-
+    printf("   probability: %.2f\n\n", achieved_probability);
 }
+
 
 static int check_args(int narg, char *varg[])
 {
