@@ -71,9 +71,12 @@ extern int min_ttx;
 #define SET_ON(p) (p)->on = ((p)->samples + 1) * (p)->tau + (p)->lambda
 
 // maximum number of calls to energy function
-#define MAX_CALLS 10
+#define MAX_CALLS 100
 // accuracy of the computation
-#define TOL_REL 1e-2
+#define TOL_REL 1e-3
+
+// the margin for T/2 for the deterministic version
+#define DET_MARGIN .17
 
 #endif
 

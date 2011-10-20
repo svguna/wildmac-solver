@@ -60,7 +60,7 @@ static double latency_params(double *tau, int *s)
    
     for (i = 1; i <= smax; i++) {
         double w, t;
-        t = M_PI / (i + 1);
+        t = M_PI * (1 + DET_MARGIN) / (i + 1);
         if (t < tau_min)
             t = tau_min;
 
