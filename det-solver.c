@@ -28,10 +28,10 @@
 #include "wildmac.h"
 
 
-static double tau_min, lambda, period;
+static double tau_min, tau_max, lambda, period;
 static double w_max, lifetime;
 int battery;
-int min_ttx;
+int min_ttx, max_ttx;
 
 static double energy_per_time(double tau, int s)
 {
@@ -62,11 +62,13 @@ static double latency_params(double *tau, int *s)
         double w, t;
         t = M_PI * (1 + DET_MARGIN) / (i + 1);
         if (t < tau_min)
-            t = tau_min;
+            t = tau_min; 
+        if (t > tau_max)
+            continue;
 
         w = energy_per_time(t, i);
 
-        if (w == DBL_MAX || w > w_min)
+        if (w == DBL_MAX || w > w_min) 
             continue;
         w_min = w;
         *tau = t;
@@ -78,13 +80,13 @@ static double latency_params(double *tau, int *s)
 
 static int check_args(int narg, char *varg[])
 {
-    if (narg == 5 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
+    if (narg == 6 && strlen(varg[1]) == 1 && (varg[1][0] == 'l' || 
             varg[1][0] == 'e'))
         return 0;
 
     print_boilerplate();
     printf("Invalid arguments. Please run the solver as follows:\n\n"
-            "\t%s (l LATENCY) | (e LIFETIME) BATTERY MIN_TTX\n\n"
+            "\t%s (l LATENCY) | (e LIFETIME) BATTERY MIN_TTX MAX_TTX\n\n"
             "where:\n"
             "\t `l' gives the best configuration to meet the latency "
             "requirements\n"
@@ -93,7 +95,8 @@ static int check_args(int narg, char *varg[])
             "requirements\n"
             "\t     (LIFETIME must be provided in hours)\n"
             "\t BATTERY capacity is expressed in mAh\n"
-            "\t MIN_TTX minimum beacon duration (in ms).\n\n",
+            "\t MIN_TTX minimum beacon duration (in ms).\n"
+            "\t MAX_TTX minimum beacon duration (in ms).\n\n",
             varg[0]);
     return 1;
 }
@@ -108,6 +111,9 @@ static void solve_latency()
 
     lambda = get_lambda(period);
     tau_min = 2 * M_PI * min_ttx / period; 
+    tau_max = 2 * M_PI * max_ttx / period;
+
+    printf("%f - %f\n", tau_min, tau_max);
 
     print_boilerplate();
     
@@ -119,8 +125,9 @@ static void solve_latency()
     period /= 100;
 
     printf("For the desired latency of %.2f ms, battery capacity of %d mAh, "
-            "and minimum beacon duration of %d ms, use the following "
-            "configuration:\n", period, battery / 100, min_ttx / 100);
+            "and beacon duration in %d - %d ms, use the following "
+            "configuration:\n", period, battery / 100, min_ttx / 100, 
+            max_ttx / 100);
     printf("      lifetime: %.2f h\n", battery / w);
     printf("   avg current: %f mA\n", w / 100);
     printf("        period: %.2f ms\n", period);
@@ -149,6 +156,7 @@ static void solve_lifetime()
     period = last_latency = ub;
     lambda = get_lambda(ub);
     tau_min = 2 * M_PI * min_ttx / ub;
+    tau_max = 2 * M_PI * max_ttx / ub;
     w = latency_params(&tau, &s);
 
     if (w > w_max) {
@@ -160,6 +168,7 @@ static void solve_lifetime()
         lambda = get_lambda(middle);
         period = middle;
         tau_min = 2 * M_PI * min_ttx / middle;
+        tau_max = 2 * M_PI * max_ttx / middle;
         w = latency_params(&tau, &s);
 
         if (w <= w_max) {
@@ -179,8 +188,9 @@ static void solve_lifetime()
     middle /= 100;
 
     printf("For the desired lifetime of %.2f h, battery capacity of %d mAh, "
-            "and minimum beacon duration of %d ms, use the following "
-            "configuration:\n", lifetime, battery / 100, min_ttx / 100);
+            "and beacon duration in %d - %d ms, use the following "
+            "configuration:\n", lifetime, battery / 100, min_ttx / 100,
+            max_ttx / 100);
     printf("        lifetime: %.2f h\n", battery / w);
     printf("latency & period: %.2f ms\n", middle);
     printf("     avg current: %f mA\n", w / 100);
@@ -200,8 +210,10 @@ int main(int narg, char *varg[])
     battery *= 100;
 
     sscanf(varg[4], "%d", &min_ttx);
+    sscanf(varg[5], "%d", &max_ttx);
     assert(min_ttx >= 20);
     min_ttx *= 100;
+    max_ttx *= 100;
 
     switch(varg[1][0]) {
         case 'l':

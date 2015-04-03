@@ -36,6 +36,7 @@ typedef struct protocol_params protocol_params_t;
 
 // current consumed while transmitting
 #define Itx 1652
+//#define Itx 850
 
 // average current consumed while ramping up
 #define Iup 908
@@ -76,7 +77,7 @@ extern int min_ttx;
 #define TOL_REL 1e-3
 
 // the margin for T/2 for the deterministic version
-#define DET_MARGIN .17
+#define DET_MARGIN 0
 
 #endif
 
